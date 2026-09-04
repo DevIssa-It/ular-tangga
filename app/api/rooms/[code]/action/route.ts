@@ -1,7 +1,39 @@
 import { NextResponse } from 'next/server';
-import { getRoom, saveRoom } from '@/lib/db';
+import { getRoom, saveRoom, getRandomQuizFromDb, saveMatchHistory } from '@/lib/db';
 import { LADDERS, SNAKES, QUIZ_TILES, generateRandomQuizTiles } from '@/lib/board-config';
-import { getRandomQuiz } from '@/lib/quiz-bank';
+
+async function recordOnlineMatch(room: any) {
+  if (room.status !== 'FINISHED' || !room.winner) return;
+  try {
+    await saveMatchHistory({
+      id: `match-online-${room.code}-${Date.now()}`,
+      mode: 'ONLINE',
+      roomCode: room.code,
+      winnerName: room.winner.name,
+      winnerColor: room.winner.color,
+      winnerAvatar: room.winner.avatar || '👑',
+      totalTurns: room.winner.turnsTaken,
+      totalPlayers: room.players.length,
+      quizzesAnswered: room.winner.quizzesAnswered,
+      quizzesCorrect: room.winner.quizzesCorrect,
+      laddersClimbed: room.winner.laddersClimbed,
+      snakesBitten: room.winner.snakesBitten,
+      playersSummary: room.players.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        color: p.color,
+        finalPosition: p.position,
+        turnsTaken: p.turnsTaken,
+        quizzesAnswered: p.quizzesAnswered,
+        quizzesCorrect: p.quizzesCorrect,
+        laddersClimbed: p.laddersClimbed,
+        snakesBitten: p.snakesBitten,
+      })),
+    });
+  } catch (e) {
+    console.warn('[Action API] Gagal mencatat riwayat online:', e);
+  }
+}
 
 export async function POST(
   request: Request,
@@ -116,6 +148,7 @@ export async function POST(
         });
         room.version += 1;
         room.updatedAt = Date.now();
+        await recordOnlineMatch(room);
         await saveRoom(room);
         return NextResponse.json({ success: true, state: room });
       }
@@ -146,6 +179,7 @@ export async function POST(
 
         room.version += 1;
         room.updatedAt = Date.now();
+        if (room.status === 'FINISHED') await recordOnlineMatch(room);
         await saveRoom(room);
         return NextResponse.json({ success: true, state: room });
       }
@@ -178,7 +212,7 @@ export async function POST(
         : QUIZ_TILES.has(currentPos);
 
       if (isQuizTile) {
-        const quiz = getRandomQuiz();
+        const quiz = await getRandomQuizFromDb();
         room.currentQuiz = quiz;
         room.phase = 'QUIZ_ACTIVE';
         room.logs.unshift({
@@ -284,6 +318,7 @@ export async function POST(
 
       room.version += 1;
       room.updatedAt = Date.now();
+      if (room.status === 'FINISHED') await recordOnlineMatch(room);
       await saveRoom(room);
       return NextResponse.json({ success: true, state: room });
     }

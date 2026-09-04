@@ -41,9 +41,27 @@ export default function WinnerModal({ winner, onRematch, onNewGame, onClose }: W
         )}
         <div className="winner-crown">👑</div>
         <h2 className="winner-title">{winner.name} Menang!</h2>
-        <p className="winner-subtitle">
+        <p className="winner-subtitle" style={{ marginBottom: '8px' }}>
           Berhasil mencapai Petak 100 dengan gemilang!
         </p>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              backgroundColor: 'var(--color-success-light)',
+              border: '2px solid var(--color-success)',
+              color: '#166534',
+              padding: '3px 10px',
+              borderRadius: '6px',
+              fontSize: '0.78rem',
+              fontWeight: 800,
+            }}
+          >
+            💾 Tersimpan ke Riwayat Neon DB
+          </span>
+        </div>
 
         {/* Statistik Pemenang (Solid Grid) */}
         <div className="winner-stats-grid">

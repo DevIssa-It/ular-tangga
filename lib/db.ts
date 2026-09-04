@@ -1,5 +1,11 @@
 import { neon } from '@neondatabase/serverless';
 import { OnlineRoomState } from './types';
+import { initQuizTable } from './db-quiz';
+import { initHistoryTable } from './db-history';
+
+// Re-export quiz & history database methods
+export * from './db-quiz';
+export * from './db-history';
 
 // Singleton in-memory fallback untuk pengujian lokal saat DATABASE_URL belum diatur
 const globalForRooms = globalThis as unknown as {
@@ -14,7 +20,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // Helper inisialisasi koneksi Neon DB
-function getDatabase() {
+export function getDatabase() {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString || connectionString.includes('ep-sample-pooler')) {
     return null;
@@ -23,9 +29,9 @@ function getDatabase() {
 }
 
 // Inisialisasi tabel game_rooms otomatis di Neon DB
-let tableInitialized = false;
-export async function initDbTable() {
-  if (tableInitialized) return;
+let roomsTableInitialized = false;
+export async function initRoomsTable() {
+  if (roomsTableInitialized) return;
   const sql = getDatabase();
   if (!sql) return;
 
@@ -39,22 +45,26 @@ export async function initDbTable() {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
     `;
-    tableInitialized = true;
+    roomsTableInitialized = true;
   } catch (err) {
-    console.warn('[Neon DB] Warning saat inisialisasi tabel:', err);
+    console.warn('[Neon DB] Warning saat inisialisasi tabel game_rooms:', err);
   }
+}
+
+// Inisialisasi semua tabel di Neon DB
+export async function initDbTable() {
+  await Promise.all([initRoomsTable(), initQuizTable(), initHistoryTable()]);
 }
 
 // Menyimpan atau memperbarui room
 export async function saveRoom(room: OnlineRoomState): Promise<void> {
   const sql = getDatabase();
   if (!sql) {
-    // Gunakan in-memory store
     memoryRooms.set(room.code.toUpperCase(), room);
     return;
   }
 
-  await initDbTable();
+  await initRoomsTable();
   const roomStateJson = JSON.stringify(room);
 
   await sql`
@@ -73,7 +83,7 @@ export async function getRoom(code: string): Promise<OnlineRoomState | null> {
     return memoryRooms.get(normalizedCode) || null;
   }
 
-  await initDbTable();
+  await initRoomsTable();
   const rows = await sql`
     SELECT state FROM game_rooms WHERE code = ${normalizedCode} LIMIT 1;
   `;
@@ -95,7 +105,7 @@ export async function deleteRoom(code: string): Promise<void> {
     return;
   }
 
-  await initDbTable();
+  await initRoomsTable();
   await sql`
     DELETE FROM game_rooms WHERE code = ${normalizedCode};
   `;

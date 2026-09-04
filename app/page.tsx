@@ -163,6 +163,44 @@ export default function GamePage() {
     return () => clearInterval(pollInterval);
   }, [playMode, onlineRoom?.code, onlineRoom?.status]);
 
+  // 3. Simpan statistik pertandingan ke database Neon DB saat permainan selesai
+  const savedMatchRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (phase === 'GAME_OVER' && winner && playMode === 'LOCAL') {
+      const matchKey = `${winner.id}-${winner.turnsTaken}`;
+      if (savedMatchRef.current === matchKey) return;
+      savedMatchRef.current = matchKey;
+
+      fetch('/api/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'LOCAL',
+          winnerName: winner.name,
+          winnerColor: winner.color,
+          winnerAvatar: winner.avatar,
+          totalTurns: winner.turnsTaken,
+          totalPlayers: players.length,
+          quizzesAnswered: winner.quizzesAnswered,
+          quizzesCorrect: winner.quizzesCorrect,
+          laddersClimbed: winner.laddersClimbed,
+          snakesBitten: winner.snakesBitten,
+          playersSummary: players.map((p) => ({
+            id: p.id,
+            name: p.name,
+            color: p.color,
+            finalPosition: p.position,
+            turnsTaken: p.turnsTaken,
+            quizzesAnswered: p.quizzesAnswered,
+            quizzesCorrect: p.quizzesCorrect,
+            laddersClimbed: p.laddersClimbed,
+            snakesBitten: p.snakesBitten,
+          })),
+        }),
+      }).catch((err) => console.warn('[GamePage] Gagal simpan riwayat ke Neon DB:', err));
+    }
+  }, [phase, winner, playMode, players]);
+
   // Utility penambahan riwayat (Log)
   const addLog = useCallback(
     (text: string, type: GameLogEntry['type'] = 'info') => {
@@ -366,10 +404,19 @@ export default function GamePage() {
       return;
     }
 
-    // 3. Kuis Dinamis
+    // 3. Kuis Dinamis (Ambil dari Neon DB dengan fallback lokal)
     const isQuizTile = quizTiles.includes(tile);
     if (isQuizTile) {
-      const quiz = getRandomQuiz();
+      let quiz = getRandomQuiz();
+      try {
+        const res = await fetch('/api/quiz');
+        const data = await res.json();
+        if (data.success && data.question) {
+          quiz = data.question;
+        }
+      } catch {
+        // Fallback ke lokal bila offline
+      }
       setCurrentQuiz(quiz);
       setPhase('QUIZ_ACTIVE');
       addLog(

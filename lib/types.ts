@@ -29,6 +29,36 @@ export interface QuizQuestion {
   options: string[];
   correctIndex: number;
   explanation: string;
+  isCustom?: boolean;
+}
+
+export interface MatchPlayerSummary {
+  id: number;
+  name: string;
+  color: string;
+  finalPosition: number;
+  turnsTaken: number;
+  quizzesAnswered: number;
+  quizzesCorrect: number;
+  laddersClimbed: number;
+  snakesBitten: number;
+}
+
+export interface MatchRecord {
+  id: string;
+  mode: PlayMode;
+  roomCode?: string;
+  winnerName: string;
+  winnerColor: string;
+  winnerAvatar: string;
+  totalTurns: number;
+  totalPlayers: number;
+  quizzesAnswered: number;
+  quizzesCorrect: number;
+  laddersClimbed: number;
+  snakesBitten: number;
+  playersSummary: MatchPlayerSummary[];
+  createdAt?: string;
 }
 
 export type GamePhase = 
