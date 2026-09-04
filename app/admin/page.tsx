@@ -86,7 +86,7 @@ export default function AdminPage() {
     }
 
     await fetchQuestions();
-    setSuccessMsg('🎉 Soal baru berhasil disimpan ke Bank Kuis (Neon DB)!');
+    setSuccessMsg('🎉 Soal baru berhasil disimpan ke Bank Kuis!');
     setTimeout(() => setSuccessMsg(''), 3500);
   };
 
@@ -96,7 +96,7 @@ export default function AdminPage() {
     try {
       await fetch(`/api/quiz?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
     } catch (e) {
-      console.warn('Gagal menghapus dari Neon DB:', e);
+      console.warn('Gagal menghapus soal:', e);
     }
     await fetchQuestions();
   };
@@ -110,10 +110,10 @@ export default function AdminPage() {
         body: JSON.stringify({ questions: imported }),
       });
     } catch (e) {
-      console.warn('Gagal batch import ke Neon DB:', e);
+      console.warn('Gagal batch import:', e);
     }
     await fetchQuestions();
-    setSuccessMsg(`✅ Berhasil mengimpor ${imported.length} soal ke database!`);
+    setSuccessMsg(`✅ Berhasil mengimpor ${imported.length} soal baru!`);
     setTimeout(() => setSuccessMsg(''), 3500);
   };
 
@@ -150,11 +150,11 @@ export default function AdminPage() {
                 📝 Dashboard Admin Bank Soal
               </h1>
               <span style={{ fontSize: '0.7rem', backgroundColor: isDbOnline ? 'var(--color-success)' : 'var(--color-quiz)', color: '#FFFFFF', padding: '2px 8px', borderRadius: '4px', fontWeight: 800 }}>
-                {isDbOnline ? '🟢 NEON DB AKTIF' : '🟡 MODE LOKAL'}
+                {isDbOnline ? '🟢 SERVER TERSINKRON' : '🟡 MODE OFFLINE'}
               </span>
             </div>
             <p style={{ fontSize: '0.84rem', color: 'var(--color-ink-muted)', margin: '4px 0 0 0', fontWeight: 600 }}>
-              Kelola soal kuis kustom dan kunci jawaban tersinkronisasi database cloud
+              Kelola soal kuis dan kunci jawaban untuk permainan Ular Tangga
             </p>
           </div>
 

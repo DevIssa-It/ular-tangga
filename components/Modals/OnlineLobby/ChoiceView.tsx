@@ -19,7 +19,7 @@ export default function ChoiceView({
     <div style={{ textAlign: 'center' }}>
       <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>🌐 🎲</div>
       <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 6px 0' }}>
-        Main Online Room (Neon DB)
+        Main Online Bersama Teman
       </h2>
       <p style={{ fontSize: '0.88rem', color: 'var(--color-ink-muted)', margin: '0 0 24px 0', fontWeight: 600 }}>
         Main bersama teman dari HP atau laptop masing-masing secara real-time.

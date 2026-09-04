@@ -74,7 +74,7 @@ export default function ModeSelectModal({
                 <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-primary-dark)' }}>
                   Main Online (Banyak HP)
                 </span>
-                <span className="mode-badge-tag">NEON DB</span>
+                <span className="mode-badge-tag">LIVE ONLINE</span>
               </div>
               <div style={{ fontSize: '0.78rem', color: '#1E3A8A', fontWeight: 600, marginTop: '2px' }}>
                 Buat room online, bagikan kode/link, dan main bersama dari HP masing-masing!
@@ -97,7 +97,7 @@ export default function ModeSelectModal({
         )}
 
         <div style={{ fontSize: '0.75rem', color: 'var(--color-ink-faint)', fontWeight: 600 }}>
-          ⚡ Siap deploy di Vercel dalam 1 project All-in-One.
+          ⚡ Mainkan langsung di browser bersama teman tanpa install aplikasi.
         </div>
       </div>
     </div>

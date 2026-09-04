@@ -59,7 +59,7 @@ export default function WinnerModal({ winner, onRematch, onNewGame, onClose }: W
               fontWeight: 800,
             }}
           >
-            💾 Tersimpan ke Riwayat Neon DB
+            🏆 Hasil Pertandingan Berhasil Dicatat
           </span>
         </div>
 

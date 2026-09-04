@@ -120,7 +120,7 @@ export default function GameHeader({
               type="button"
               className="btn btn-sm"
               onClick={onSwitchToOnline}
-              title="Main bersama teman dari HP masing-masing via Neon DB"
+              title="Main bersama teman dari HP masing-masing secara online"
               style={{
                 backgroundColor: 'var(--color-primary-light)',
                 borderColor: 'var(--color-primary)',
