@@ -248,11 +248,13 @@ export async function POST(
       activePlayer.quizzesAnswered += 1;
       room.currentQuiz = null;
 
+      let targetPos = activePlayer.position;
       if (isCorrect) {
         activePlayer.quizzesCorrect += 1;
         let newPos = activePlayer.position + 2;
         if (newPos > 100) newPos = 100 - (newPos - 100);
         activePlayer.position = newPos;
+        targetPos = newPos;
 
         room.logs.unshift({
           id: `log-${Date.now()}-quiz-ok`,
@@ -260,33 +262,10 @@ export async function POST(
           type: 'quiz',
           timestamp: new Date().toISOString(),
         });
-
-        if (newPos === 100) {
-          room.winner = activePlayer;
-          room.status = 'FINISHED';
-          room.phase = 'GAME_OVER';
-        } else {
-          // Chain reaction: jika petak bonus ada tangga
-          const bonusLadder = LADDERS.find((l) => l.start === newPos);
-          if (bonusLadder) {
-            activePlayer.position = bonusLadder.end;
-            activePlayer.laddersClimbed += 1;
-            room.logs.unshift({
-              id: `log-${Date.now()}-bonus-ladder`,
-              text: `🪜 Hebat! Bonus kuis membawa ${activePlayer.name} ke tangga petak ${bonusLadder.start} -> naik ke ${bonusLadder.end}!`,
-              type: 'ladder',
-              timestamp: new Date().toISOString(),
-            });
-            if (bonusLadder.end === 100) {
-              room.winner = activePlayer;
-              room.status = 'FINISHED';
-              room.phase = 'GAME_OVER';
-            }
-          }
-        }
       } else {
         const penaltyPos = Math.max(1, activePlayer.position - 1);
         activePlayer.position = penaltyPos;
+        targetPos = penaltyPos;
 
         room.logs.unshift({
           id: `log-${Date.now()}-quiz-fail`,
@@ -294,18 +273,43 @@ export async function POST(
           type: 'quiz',
           timestamp: new Date().toISOString(),
         });
+      }
 
-        // Chain reaction: jika petak penalti ada ular
-        const penaltySnake = SNAKES.find((s) => s.start === penaltyPos);
-        if (penaltySnake) {
-          activePlayer.position = penaltySnake.end;
-          activePlayer.snakesBitten += 1;
+      // 1. Cek Kemenangan
+      if (targetPos === 100) {
+        room.winner = activePlayer;
+        room.status = 'FINISHED';
+        room.phase = 'GAME_OVER';
+      } else {
+        // 2. Cek Reaksi Berantai TANGGA di petak tujuan
+        const ladder = LADDERS.find((l) => l.start === targetPos);
+        if (ladder) {
+          activePlayer.position = ladder.end;
+          activePlayer.laddersClimbed += 1;
           room.logs.unshift({
-            id: `log-${Date.now()}-penalty-snake`,
-            text: `🐍 Awas! Penalti kuis menjatuhkan ${activePlayer.name} ke kepala ular di petak ${penaltySnake.start} -> meluncur ke ${penaltySnake.end}!`,
-            type: 'snake',
+            id: `log-${Date.now()}-bonus-ladder`,
+            text: `🪜 Hebat! Reaksi kuis membawa ${activePlayer.name} ke tangga petak ${ladder.start} -> naik ke ${ladder.end}!`,
+            type: 'ladder',
             timestamp: new Date().toISOString(),
           });
+          if (ladder.end === 100) {
+            room.winner = activePlayer;
+            room.status = 'FINISHED';
+            room.phase = 'GAME_OVER';
+          }
+        } else {
+          // 3. Cek Reaksi Berantai ULAR di petak tujuan
+          const snake = SNAKES.find((s) => s.start === targetPos);
+          if (snake) {
+            activePlayer.position = snake.end;
+            activePlayer.snakesBitten += 1;
+            room.logs.unshift({
+              id: `log-${Date.now()}-penalty-snake`,
+              text: `🐍 Ups! Reaksi kuis menjatuhkan ${activePlayer.name} ke kepala ular di petak ${snake.start} -> meluncur ke ${snake.end}!`,
+              type: 'snake',
+              timestamp: new Date().toISOString(),
+            });
+          }
         }
       }
 

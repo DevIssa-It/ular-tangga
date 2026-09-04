@@ -12,6 +12,8 @@ export async function POST(
     const body = await request.json().catch(() => ({}));
     const playerName = (body.name || 'Pemain').trim();
     const playerAvatar = body.avatar || '🦊';
+    const existingPlayerId = body.playerId ? Number(body.playerId) : null;
+    const hostId = body.hostId;
 
     const room = await getRoom(code);
     if (!room) {
@@ -21,6 +23,46 @@ export async function POST(
       );
     }
 
+    // 1. Cek apakah pemain ingin bergabung kembali (Reconnect via playerId)
+    if (existingPlayerId) {
+      const existingPlayer = room.players.find((p) => p.id === existingPlayerId);
+      if (existingPlayer) {
+        return NextResponse.json({
+          success: true,
+          player: existingPlayer,
+          state: room,
+          reconnected: true,
+        });
+      }
+    }
+
+    // 2. Cek apakah ini Host asli yang bergabung kembali (Reconnect via hostId)
+    if (hostId && room.hostId === hostId) {
+      const hostPlayer = room.players.find((p) => p.isHost) || room.players[0];
+      if (hostPlayer) {
+        return NextResponse.json({
+          success: true,
+          player: hostPlayer,
+          state: room,
+          reconnected: true,
+        });
+      }
+    }
+
+    // 3. Cek apakah ada pemain dengan nama yang sama di room (hindari duplikasi slot)
+    const sameNamePlayer = room.players.find(
+      (p) => p.name.trim().toLowerCase() === playerName.toLowerCase()
+    );
+    if (sameNamePlayer) {
+      return NextResponse.json({
+        success: true,
+        player: sameNamePlayer,
+        state: room,
+        reconnected: true,
+      });
+    }
+
+    // 4. Jika room sudah penuh
     if (room.players.length >= 6) {
       return NextResponse.json(
         { error: 'Room sudah penuh (maksimal 6 pemain).' },
@@ -28,6 +70,7 @@ export async function POST(
       );
     }
 
+    // 5. Daftarkan pemain baru jika memang belum pernah ada
     const nextId = room.players.length + 1;
     const nextPreset = DEFAULT_PLAYER_PRESETS[(nextId - 1) % DEFAULT_PLAYER_PRESETS.length];
 
@@ -62,6 +105,7 @@ export async function POST(
       success: true,
       player: newPlayer,
       state: room,
+      reconnected: false,
     });
   } catch (error) {
     console.error('Error joining room:', error);

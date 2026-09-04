@@ -268,7 +268,28 @@ export default function GamePage() {
   };
 
   // Keluar dari Room Online
-  const handleLeaveOnlineRoom = () => {
+  const handleLeaveOnlineRoom = async () => {
+    if (!confirm('Yakin ingin keluar dari room online ini?')) return;
+
+    if (onlineRoom && myPlayerId) {
+      try {
+        let hostId: string | undefined;
+        try {
+          const raw = localStorage.getItem(`ular_session_${onlineRoom.code}`);
+          if (raw) hostId = JSON.parse(raw).hostId;
+        } catch {}
+
+        await fetch(`/api/rooms/${onlineRoom.code}/leave`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ playerId: myPlayerId, hostId }),
+        });
+        localStorage.removeItem(`ular_session_${onlineRoom.code}`);
+      } catch (err) {
+        console.warn('Gagal leave online room:', err);
+      }
+    }
+
     setOnlineRoom(null);
     setMyPlayerId(null);
     setShowOnlineLobby(false);
@@ -600,16 +621,20 @@ export default function GamePage() {
 
       setPlayers((prev) => {
         const updated = [...prev];
-        updated[playerIdx].quizzesAnswered += 1;
-        if (isCorrect) {
-          updated[playerIdx].quizzesCorrect += 1;
-        }
+        updated[playerIdx] = {
+          ...updated[playerIdx],
+          quizzesAnswered: updated[playerIdx].quizzesAnswered + 1,
+          quizzesCorrect: isCorrect
+            ? updated[playerIdx].quizzesCorrect + 1
+            : updated[playerIdx].quizzesCorrect,
+        };
         return updated;
       });
 
       setCurrentQuiz(null);
       setPhase('MOVING');
 
+      let targetPos = startPos;
       if (isCorrect) {
         addLog(
           `✅ ${player.name} menjawab kuis dengan benar! Bonus maju +2 petak!`,
@@ -617,87 +642,108 @@ export default function GamePage() {
         );
         let newPos = startPos + 2;
         if (newPos > 100) newPos = 100 - (newPos - 100);
+        targetPos = newPos;
 
+        // Langkah maju per petak
         for (let i = 1; i <= 2; i++) {
           soundEngine.playStep();
-          const target = Math.min(100, startPos + i);
+          const stepPos = Math.min(100, startPos + i);
           setPlayers((prev) => {
             const updated = [...prev];
             updated[playerIdx] = {
               ...updated[playerIdx],
-              position: target,
+              position: stepPos,
             };
             return updated;
           });
           await new Promise((resolve) => setTimeout(resolve, 250));
-        }
-
-        if (newPos === 100) {
-          soundEngine.playVictory();
-          setWinner(players[playerIdx]);
-          setPhase('GAME_OVER');
-          return;
-        }
-
-        const bonusLadder = LADDERS.find((l) => l.start === newPos);
-        if (bonusLadder) {
-          soundEngine.playLadder();
-          addLog(
-            `🪜 Hebat! Bonus membawa ${player.name} ke tangga ${bonusLadder.start} -> ${bonusLadder.end}!`,
-            'ladder'
-          );
-          await new Promise((resolve) => setTimeout(resolve, 350));
-          setPlayers((prev) => {
-            const updated = [...prev];
-            updated[playerIdx].position = bonusLadder.end;
-            updated[playerIdx].laddersClimbed += 1;
-            return updated;
-          });
-          await new Promise((resolve) => setTimeout(resolve, 400));
-          if (bonusLadder.end === 100) {
-            soundEngine.playVictory();
-            setWinner(players[playerIdx]);
-            setPhase('GAME_OVER');
-            return;
-          }
         }
       } else {
         addLog(
           `❌ ${player.name} belum tepat menjawab kuis! Penalti mundur -1 petak!`,
           'quiz'
         );
-        const penaltyPos = Math.max(1, startPos - 1);
+        targetPos = Math.max(1, startPos - 1);
         if (startPos > 1) {
           soundEngine.playStep();
           setPlayers((prev) => {
             const updated = [...prev];
             updated[playerIdx] = {
               ...updated[playerIdx],
-              position: penaltyPos,
+              position: targetPos,
             };
             return updated;
           });
           await new Promise((resolve) => setTimeout(resolve, 300));
         }
-
-        const penaltySnake = SNAKES.find((s) => s.start === penaltyPos);
-        if (penaltySnake) {
-          soundEngine.playSnake();
-          addLog(
-            `🐍 Penalti menjatuhkan ${player.name} ke ular ${penaltySnake.start} -> ${penaltySnake.end}!`,
-            'snake'
-          );
-          await new Promise((resolve) => setTimeout(resolve, 350));
-          setPlayers((prev) => {
-            const updated = [...prev];
-            updated[playerIdx].position = penaltySnake.end;
-            updated[playerIdx].snakesBitten += 1;
-            return updated;
-          });
-          await new Promise((resolve) => setTimeout(resolve, 400));
-        }
       }
 
+      // 1. Cek Kemenangan di Petak 100
+      if (targetPos === 100) {
+        soundEngine.playVictory();
+        setWinner(players[playerIdx]);
+        setPhase('GAME_OVER');
+        return;
+      }
+
+      // 2. Cek Reaksi Berantai TANGGA di petak tujuan
+      const ladder = LADDERS.find((l) => l.start === targetPos);
+      if (ladder) {
+        setPhase('ON_SPECIAL');
+        soundEngine.playLadder();
+        addLog(
+          `🪜 Hebat! Reaksi kuis membawa ${player.name} ke tangga ${ladder.start} -> naik ke ${ladder.end}!`,
+          'ladder'
+        );
+        await new Promise((resolve) => setTimeout(resolve, 450));
+        setPlayers((prev) => {
+          const updated = [...prev];
+          updated[playerIdx] = {
+            ...updated[playerIdx],
+            position: ladder.end,
+            laddersClimbed: updated[playerIdx].laddersClimbed + 1,
+          };
+          return updated;
+        });
+        await new Promise((resolve) => setTimeout(resolve, 600));
+
+        if (ladder.end === 100) {
+          soundEngine.playVictory();
+          setWinner(players[playerIdx]);
+          setPhase('GAME_OVER');
+          return;
+        }
+
+        finishTurn(lastRolledSix);
+        return;
+      }
+
+      // 3. Cek Reaksi Berantai ULAR di petak tujuan
+      const snake = SNAKES.find((s) => s.start === targetPos);
+      if (snake) {
+        setPhase('ON_SPECIAL');
+        soundEngine.playSnake();
+        addLog(
+          `🐍 Ups! Reaksi kuis menjatuhkan ${player.name} ke kepala ular ${snake.start} -> meluncur ke ${snake.end}!`,
+          'snake'
+        );
+        await new Promise((resolve) => setTimeout(resolve, 450));
+        setPlayers((prev) => {
+          const updated = [...prev];
+          updated[playerIdx] = {
+            ...updated[playerIdx],
+            position: snake.end,
+            snakesBitten: updated[playerIdx].snakesBitten + 1,
+          };
+          return updated;
+        });
+        await new Promise((resolve) => setTimeout(resolve, 600));
+
+        finishTurn(lastRolledSix);
+        return;
+      }
+
+      // 4. Petak Biasa (Bukan Tangga/Ular)
       finishTurn(lastRolledSix);
     } finally {
       isAnsweringQuizRef.current = false;

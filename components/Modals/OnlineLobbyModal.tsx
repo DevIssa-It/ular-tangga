@@ -68,6 +68,20 @@ export default function OnlineLobbyModal({
     };
   }, [subView, currentRoom, myPlayerId, onGameStarted]);
 
+  // Auto-restore nama & avatar dari sesi tersimpan jika ada roomCode
+  useEffect(() => {
+    if (initialRoomCode) {
+      try {
+        const raw = localStorage.getItem(`ular_session_${initialRoomCode}`);
+        if (raw) {
+          const s = JSON.parse(raw);
+          if (s.name) setName(s.name);
+          if (s.avatar) setAvatar(s.avatar);
+        }
+      } catch {}
+    }
+  }, [initialRoomCode]);
+
   // Handler: Buat Room Baru
   const handleCreateRoom = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,6 +101,21 @@ export default function OnlineLobbyModal({
         throw new Error(data.error || 'Gagal membuat room.');
       }
 
+      // Simpan session Host ke localStorage
+      try {
+        localStorage.setItem(
+          `ular_session_${data.roomCode}`,
+          JSON.stringify({
+            roomCode: data.roomCode,
+            playerId: data.player.id,
+            hostId: data.hostId,
+            isHost: true,
+            name: name.trim(),
+            avatar,
+          })
+        );
+      } catch {}
+
       setCurrentRoom(data.state);
       setMyPlayerId(data.player.id);
       setSubView('LOBBY');
@@ -97,7 +126,7 @@ export default function OnlineLobbyModal({
     }
   };
 
-  // Handler: Gabung Room
+  // Handler: Gabung Room (Mendukung Reconnect)
   const handleJoinRoom = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanCode = roomCodeInput.trim().toUpperCase();
@@ -105,17 +134,44 @@ export default function OnlineLobbyModal({
     setLoading(true);
     setErrorMsg('');
 
+    // Baca sesi sebelumnya jika ada
+    let sessionData: any = null;
+    try {
+      const raw = localStorage.getItem(`ular_session_${cleanCode}`);
+      if (raw) sessionData = JSON.parse(raw);
+    } catch {}
+
     try {
       const res = await fetch(`/api/rooms/${cleanCode}/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), avatar }),
+        body: JSON.stringify({
+          name: name.trim(),
+          avatar,
+          playerId: sessionData?.playerId,
+          hostId: sessionData?.hostId,
+        }),
       });
 
       const data = await res.json();
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'Gagal bergabung ke room.');
       }
+
+      // Simpan/perbarui session di localStorage
+      try {
+        localStorage.setItem(
+          `ular_session_${cleanCode}`,
+          JSON.stringify({
+            roomCode: cleanCode,
+            playerId: data.player.id,
+            hostId: sessionData?.hostId || (data.player.isHost ? data.state.hostId : undefined),
+            isHost: data.player.isHost,
+            name: data.player.name,
+            avatar: data.player.avatar,
+          })
+        );
+      } catch {}
 
       setCurrentRoom(data.state);
       setMyPlayerId(data.player.id);
@@ -125,6 +181,31 @@ export default function OnlineLobbyModal({
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handler: Keluar dari Lobby dan Hapus dari Database
+  const handleLeaveLobby = async () => {
+    if (currentRoom && myPlayerId) {
+      try {
+        let hostId: string | undefined;
+        try {
+          const raw = localStorage.getItem(`ular_session_${currentRoom.code}`);
+          if (raw) hostId = JSON.parse(raw).hostId;
+        } catch {}
+
+        await fetch(`/api/rooms/${currentRoom.code}/leave`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ playerId: myPlayerId, hostId }),
+        });
+        localStorage.removeItem(`ular_session_${currentRoom.code}`);
+      } catch (e) {
+        console.warn('Gagal leave room:', e);
+      }
+    }
+    setCurrentRoom(null);
+    setMyPlayerId(null);
+    setSubView('CHOICE');
   };
 
   // Handler: Host Mulai Game
@@ -241,7 +322,7 @@ export default function OnlineLobbyModal({
             errorMsg={errorMsg}
             onCopyLink={handleCopyLink}
             onHostStart={handleHostStartGame}
-            onLeave={handleDismiss}
+            onLeave={handleLeaveLobby}
           />
         )}
       </div>
