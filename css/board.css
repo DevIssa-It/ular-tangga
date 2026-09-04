@@ -1,0 +1,278 @@
+/* ==========================================================================
+   BOARD STYLES - GAME ULAR TANGGA TRIVIA
+   ATURAN MUTLAK: ZERO GRADIENTS (Dilarang linear/radial gradient)
+   ========================================================================== */
+
+/* Kontainer Papan Permainan */
+.board-container {
+  position: relative;
+  width: 100%;
+  max-width: 650px;
+  margin: 0 auto;
+  aspect-ratio: 1 / 1;
+  background-color: var(--color-surface);
+  border: var(--border-width-lg) solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  user-select: none;
+}
+
+/* Grid 10x10 Papan */
+.board-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  grid-template-rows: repeat(10, 1fr);
+  width: 100%;
+  height: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+/* Kotak / Petak Papan */
+.board-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 3px;
+  border-right: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  background-color: var(--tile-even);
+  transition: background-color var(--transition-fast);
+  box-sizing: border-box;
+}
+
+.board-tile.odd {
+  background-color: var(--tile-odd);
+}
+
+.board-tile:nth-child(10n) {
+  border-right: none;
+}
+
+.board-tile:nth-last-child(-n+10) {
+  border-bottom: none;
+}
+
+/* Nomor Petak */
+.tile-number {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-ink-muted);
+  line-height: 1;
+}
+
+/* Petak Khusus: Kotak Awal & Akhir */
+.board-tile[data-tile="1"] {
+  background-color: var(--color-primary-light);
+}
+
+.board-tile[data-tile="100"] {
+  background-color: var(--tile-goal);
+}
+
+.board-tile[data-tile="100"] .tile-number {
+  color: #B45309;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+/* Petak Kuis */
+.board-tile.is-quiz {
+  background-color: var(--tile-quiz);
+}
+
+.tile-badge-quiz {
+  align-self: center;
+  margin-top: auto;
+  margin-bottom: auto;
+  font-size: 0.7rem;
+  font-weight: 800;
+  background-color: var(--color-quiz);
+  color: #FFFFFF;
+  padding: 1px 4px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  box-shadow: 1px 1px 0px var(--border-color);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Indikator Ular & Tangga */
+.tile-icon-indicator {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 3px;
+  border-radius: 3px;
+  line-height: 1;
+}
+
+.tile-icon-indicator.ladder-start {
+  background-color: var(--color-success-light);
+  color: var(--color-success);
+  border: 1px solid var(--color-success);
+}
+
+.tile-icon-indicator.snake-head {
+  background-color: var(--color-danger-light);
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger);
+}
+
+/* SVG Overlay untuk Ular dan Tangga */
+.board-svg-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Elemen Tangga di SVG (Flat solid lines) */
+.svg-ladder-rail {
+  stroke: #047857;
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+
+.svg-ladder-rail-inner {
+  stroke: #10B981;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+.svg-ladder-rung {
+  stroke: #047857;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+}
+
+/* Elemen Ular di SVG (Solid body with border, eyes & tongue) */
+.svg-snake-body-outline {
+  fill: none;
+  stroke: #991B1B;
+  stroke-width: 12;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.svg-snake-body {
+  fill: none;
+  stroke: #EF4444;
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.svg-snake-belly {
+  fill: none;
+  stroke: #FCA5A5;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 4 6;
+}
+
+.svg-snake-head {
+  fill: #DC2626;
+  stroke: #991B1B;
+  stroke-width: 2;
+}
+
+.svg-snake-eye {
+  fill: #FFFFFF;
+  stroke: #18181B;
+  stroke-width: 1;
+}
+
+.svg-snake-pupil {
+  fill: #18181B;
+}
+
+.svg-snake-tongue {
+  stroke: #7F1D1D;
+  stroke-width: 2;
+  stroke-linecap: round;
+  fill: none;
+}
+
+/* Layer Bidak / Pion Pemain */
+.board-pawns-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* Bidak / Token Pemain (Solid flat) */
+.player-pawn {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  border: 2px solid #18181B;
+  box-shadow: 2px 2px 0px #18181B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.75rem;
+  color: #FFFFFF;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), left 0.3s ease, top 0.3s ease;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+}
+
+.player-pawn.is-active {
+  z-index: 10;
+  animation: pawnBounce 1s infinite alternate ease-in-out;
+}
+
+.player-pawn-indicator {
+  position: absolute;
+  top: -10px;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid #18181B;
+}
+
+@keyframes pawnBounce {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    transform: translate(-50%, -65%) scale(1.1);
+  }
+}
+
+/* Responsive adjustment untuk layar kecil */
+@media (max-width: 600px) {
+  .tile-number {
+    font-size: 0.6rem;
+  }
+  
+  .tile-badge-quiz {
+    font-size: 0.55rem;
+    padding: 0px 2px;
+  }
+
+  .player-pawn {
+    width: 20px;
+    height: 20px;
+    font-size: 0.6rem;
+    border-width: 1.5px;
+    box-shadow: 1px 1px 0px #18181B;
+  }
+}
