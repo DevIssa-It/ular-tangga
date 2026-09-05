@@ -190,7 +190,7 @@ body {
   border: var(--border-width-lg) solid var(--border-color);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
-  overflow: hidden;
+  overflow: visible;
   user-select: none;
 }
 
@@ -202,6 +202,8 @@ body {
   height: 100%;
   position: relative;
   z-index: 1;
+  border-radius: calc(var(--radius-md) - 2px);
+  overflow: hidden;
 }
 
 .board-tile {
@@ -1316,13 +1318,13 @@ input[type="radio"]:checked::before {
   font-size: 0.75rem;
   font-weight: 800;
   white-space: nowrap;
-  max-width: 150px;
+  max-width: 170px;
   text-overflow: ellipsis;
   overflow: hidden;
   box-shadow: 2px 2px 0px #18181B;
   z-index: 50;
   pointer-events: none;
-  animation: tauntPop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: tauntPop 0.2s ease-out;
 }
 
 .pawn-speech-bubble::after {
@@ -1336,7 +1338,61 @@ input[type="radio"]:checked::before {
   border-color: #18181B transparent transparent transparent;
 }
 
+/* Jika bidak di pinggir kiri papan: geser balon ke kanan agar tidak terpotong */
+.pawn-speech-bubble.is-left {
+  left: -4px;
+  transform: none;
+}
+
+.pawn-speech-bubble.is-left::after {
+  left: 14px;
+  transform: none;
+}
+
+/* Jika bidak di pinggir kanan papan: geser balon ke kiri agar tidak terpotong */
+.pawn-speech-bubble.is-right {
+  left: auto;
+  right: -4px;
+  transform: none;
+}
+
+.pawn-speech-bubble.is-right::after {
+  left: auto;
+  right: 14px;
+  transform: none;
+}
+
+/* Jika bidak di baris paling atas (row 0-1): munculkan balon di bawah bidak */
+.pawn-speech-bubble.is-top {
+  bottom: auto;
+  top: calc(100% + 10px);
+}
+
+.pawn-speech-bubble.is-top::after {
+  top: auto;
+  bottom: 100%;
+  border-color: transparent transparent #18181B transparent;
+}
+
 @keyframes tauntPop {
-  0% { transform: translateX(-50%) scale(0.6); opacity: 0; }
-  100% { transform: translateX(-50%) scale(1); opacity: 1; }
+  0% { opacity: 0; transform: scale(0.6); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.pawn-speech-bubble.is-left {
+  animation: tauntPopLeft 0.2s ease-out;
+}
+
+.pawn-speech-bubble.is-right {
+  animation: tauntPopRight 0.2s ease-out;
+}
+
+@keyframes tauntPopLeft {
+  0% { opacity: 0; transform: scale(0.6); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes tauntPopRight {
+  0% { opacity: 0; transform: scale(0.6); }
+  100% { opacity: 1; transform: scale(1); }
 }

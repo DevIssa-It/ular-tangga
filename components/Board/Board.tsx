@@ -76,6 +76,12 @@ export default function Board({ players, activePlayerIndex, quizTiles, activeTau
           const pos = getPawnPosition(player, idx);
           const isActive = idx === activePlayerIndex;
           const hasTaunt = activeTaunt && activeTaunt.playerId === player.id;
+          const { row, col } = getGridCoordinates(player.position);
+
+          let bubbleClass = 'pawn-speech-bubble';
+          if (row <= 1) bubbleClass += ' is-top';
+          if (col <= 1) bubbleClass += ' is-left';
+          else if (col >= 8) bubbleClass += ' is-right';
 
           return (
             <div
@@ -91,7 +97,7 @@ export default function Board({ players, activePlayerIndex, quizTiles, activeTau
               {isActive && <div className="player-pawn-indicator" />}
               <span>{player.avatar}</span>
               {hasTaunt && (
-                <div className="pawn-speech-bubble" key={activeTaunt.timestamp}>
+                <div className={bubbleClass} key={activeTaunt.timestamp}>
                   {activeTaunt.text}
                 </div>
               )}
