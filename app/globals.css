@@ -113,32 +113,44 @@ body {
   gap: 12px;
 }
 
-/* Layout */
+/* Layout 3 Kolom Desktop */
 .main-layout {
   flex: 1;
-  max-width: 1180px;
+  max-width: 1420px;
   width: 100%;
   margin: 0 auto;
-  padding: 24px 20px;
+  padding: 16px 20px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
-  gap: 28px;
+  grid-template-columns: 280px minmax(0, 1fr) 310px;
+  gap: 20px;
   align-items: start;
 }
 
-.board-section {
+.layout-col-left {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.layout-col-center {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   width: 100%;
+}
+
+.layout-col-right {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .board-legend {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 18px;
+  gap: 16px;
   background-color: var(--color-surface);
   border: var(--border-width) solid var(--border-color);
   border-radius: var(--radius-md);
@@ -147,7 +159,7 @@ body {
   font-size: 0.8rem;
   font-weight: 700;
   width: 100%;
-  max-width: 650px;
+  max-width: 640px;
 }
 
 .legend-item {
@@ -171,7 +183,7 @@ body {
 .board-container {
   position: relative;
   width: 100%;
-  max-width: 650px;
+  max-width: 640px;
   margin: 0 auto;
   aspect-ratio: 1 / 1;
   background-color: var(--color-surface);
@@ -368,7 +380,7 @@ body {
 .sidebar-section {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
 }
 
 /* Dadu Flat Tactile */
@@ -376,8 +388,8 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
-  padding: 18px;
+  gap: 10px;
+  padding: 12px 14px;
   background-color: var(--color-surface);
   border: var(--border-width) solid var(--border-color);
   border-radius: var(--radius-md);
@@ -579,9 +591,11 @@ body {
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
   padding: 12px 14px;
-  max-height: 170px;
+  max-height: 250px;
+  width: 100%;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
 .game-log-title {
@@ -595,13 +609,24 @@ body {
   justify-content: space-between;
 }
 
+.game-log-count-badge {
+  font-size: 0.68rem;
+  font-weight: 800;
+  background-color: var(--color-surface-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--color-ink-muted);
+}
+
 .log-entries {
   list-style: none;
   overflow-y: auto;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   display: flex;
   flex-direction: column;
   gap: 5px;
+  max-height: 195px;
 }
 
 .log-entry {
@@ -818,12 +843,17 @@ body {
 }
 
 /* Responsif */
-@media (max-width: 980px) {
+@media (max-width: 1060px) {
   .main-layout {
     grid-template-columns: 1fr;
-    gap: 20px;
-    padding: 14px;
+    gap: 16px;
+    padding: 12px;
   }
+
+  /* Urutan di layar ponsel: Papan -> Dadu & Interaksi -> Pemain & Riwayat */
+  .layout-col-center { order: 1; }
+  .layout-col-right  { order: 2; }
+  .layout-col-left   { order: 3; }
 }
 
 /* ==========================================================================

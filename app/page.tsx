@@ -80,7 +80,14 @@ export default function GamePage() {
       />
 
       <main className="main-layout">
-        <section className="board-section">
+        {/* Kolom Kiri: Daftar Pemain & Riwayat Permainan */}
+        <aside className="layout-col-left">
+          {local.players.length > 0 && <PlayerSidebar players={local.players} activePlayerIndex={local.activePlayerIndex} />}
+          {local.players.length > 0 && <GameLog logs={local.logs} />}
+        </aside>
+
+        {/* Kolom Tengah: Papan Permainan Utama (Lega & Besar) */}
+        <section className="layout-col-center">
           <div className="board-legend">
             <div className="legend-item"><div className="legend-swatch ladder" /><span>Tangga (Naik)</span></div>
             <div className="legend-item"><div className="legend-swatch snake" /><span>Ular (Turun)</span></div>
@@ -90,22 +97,20 @@ export default function GamePage() {
           <Board players={local.players} activePlayerIndex={local.activePlayerIndex} quizTiles={local.quizTiles} activeTaunt={online.activeTaunt} />
         </section>
 
-        <aside className="sidebar-section">
+        {/* Kolom Kanan: Giliran, Lempar Dadu, Chat & Ejekan */}
+        <aside className="layout-col-right">
           {local.players.length > 0 && <TurnBanner player={activePlayer} phase={local.phase} hasBonusRoll={local.lastRolledSix && local.consecutiveSixes > 0 && local.phase === 'WAIT_ROLL'} />}
           {playMode === 'ONLINE' && !isMyTurn && (
-            <div style={{ padding: '10px 14px', backgroundColor: '#FEF3C7', border: '2px solid #D97706', borderRadius: '8px', fontSize: '0.86rem', fontWeight: 700, color: '#92400E', textAlign: 'center', boxShadow: '2px 2px 0px #D97706' }}>
+            <div style={{ padding: '8px 12px', backgroundColor: '#FEF3C7', border: '2px solid #D97706', borderRadius: '8px', fontSize: '0.84rem', fontWeight: 700, color: '#92400E', textAlign: 'center', boxShadow: '2px 2px 0px #D97706' }}>
               ⏳ Menunggu giliran <strong>{activePlayer?.name}</strong> melempar dadu...
             </div>
           )}
           <Dice value={local.diceValue} isRolling={local.isRolling} disabled={local.phase !== 'WAIT_ROLL' || !isMyTurn} onRoll={handleRoll} activePlayerName={playMode === 'ONLINE' && isMyTurn ? 'Anda' : activePlayer.name} />
           
-          {/* Chat & Ejekan Bidak di Sidebar Kanan (Desktop & Responsif Mobile) */}
+          {/* Chat & Ejekan Bidak Langsung */}
           {local.phase !== 'SETUP' && playMode !== 'SELECT' && (
             <QuickChatBar senderName={playMode === 'ONLINE' ? (myPlayer?.name || 'Saya') : activePlayer.name} onSendTaunt={handleSendTaunt} />
           )}
-
-          {local.players.length > 0 && <PlayerSidebar players={local.players} activePlayerIndex={local.activePlayerIndex} />}
-          <GameLog logs={local.logs} />
         </aside>
       </main>
 

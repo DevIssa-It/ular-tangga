@@ -39,7 +39,7 @@ export default function QuickChatBar({ senderName, onSendTaunt }: QuickChatBarPr
   };
 
   return (
-    <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px' }}>
+    <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '10px 12px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-ink)', textTransform: 'uppercase' }}>
           💬 Chat & Ejekan Bidak
@@ -50,18 +50,18 @@ export default function QuickChatBar({ senderName, onSendTaunt }: QuickChatBarPr
       </div>
 
       {/* Grid Ejekan Instan 1-Tap (2 Kolom) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '4px' }}>
         {PRESET_TAUNTS.map((t, idx) => (
           <button
             key={idx}
             type="button"
             onClick={() => handleSelectPreset(t)}
             style={{
-              padding: '6px 8px',
+              padding: '4px 6px',
               backgroundColor: '#FFFFFF',
               border: '1.5px solid var(--border-color)',
-              borderRadius: '6px',
-              fontSize: '0.75rem',
+              borderRadius: '5px',
+              fontSize: '0.72rem',
               fontWeight: 700,
               cursor: 'pointer',
               textAlign: 'left',
