@@ -88,11 +88,6 @@ export default function GamePage() {
           </div>
 
           <Board players={local.players} activePlayerIndex={local.activePlayerIndex} quizTiles={local.quizTiles} activeTaunt={online.activeTaunt} />
-
-          {/* Chat & Ejekan Instan Langsung (Tanpa Modal / Tanpa Tekan Tombol Buka) */}
-          {local.phase !== 'SETUP' && playMode !== 'SELECT' && (
-            <QuickChatBar senderName={playMode === 'ONLINE' ? (myPlayer?.name || 'Saya') : activePlayer.name} onSendTaunt={handleSendTaunt} />
-          )}
         </section>
 
         <aside className="sidebar-section">
@@ -103,6 +98,12 @@ export default function GamePage() {
             </div>
           )}
           <Dice value={local.diceValue} isRolling={local.isRolling} disabled={local.phase !== 'WAIT_ROLL' || !isMyTurn} onRoll={handleRoll} activePlayerName={playMode === 'ONLINE' && isMyTurn ? 'Anda' : activePlayer.name} />
+          
+          {/* Chat & Ejekan Bidak di Sidebar Kanan (Desktop & Responsif Mobile) */}
+          {local.phase !== 'SETUP' && playMode !== 'SELECT' && (
+            <QuickChatBar senderName={playMode === 'ONLINE' ? (myPlayer?.name || 'Saya') : activePlayer.name} onSendTaunt={handleSendTaunt} />
+          )}
+
           {local.players.length > 0 && <PlayerSidebar players={local.players} activePlayerIndex={local.activePlayerIndex} />}
           <GameLog logs={local.logs} />
         </aside>

@@ -39,44 +39,34 @@ export default function QuickChatBar({ senderName, onSendTaunt }: QuickChatBarPr
   };
 
   return (
-    <div
-      style={{
-        backgroundColor: 'var(--color-surface)',
-        border: '2px solid var(--border-color)',
-        borderRadius: 'var(--radius-md)',
-        padding: '10px 14px',
-        boxShadow: 'var(--shadow-sm)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px',
-        width: '100%',
-        maxWidth: '650px',
-        margin: '10px auto 0 auto',
-        boxSizing: 'border-box',
-      }}
-    >
-      {/* Baris 1: Strip Ejekan Instan 1-Tap (Scroll Horizontal) */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflowX: 'auto', paddingBottom: '2px' }}>
-        <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--color-ink-muted)', flexShrink: 0 }}>
-          ⚡ Ejekan:
+    <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-ink)', textTransform: 'uppercase' }}>
+          💬 Chat & Ejekan Bidak
         </span>
+        <span style={{ fontSize: '0.7rem', color: 'var(--color-ink-muted)', fontWeight: 700 }}>
+          {senderName}
+        </span>
+      </div>
+
+      {/* Grid Ejekan Instan 1-Tap (2 Kolom) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
         {PRESET_TAUNTS.map((t, idx) => (
           <button
             key={idx}
             type="button"
             onClick={() => handleSelectPreset(t)}
             style={{
-              padding: '4px 10px',
+              padding: '6px 8px',
               backgroundColor: '#FFFFFF',
               border: '1.5px solid var(--border-color)',
               borderRadius: '6px',
-              fontSize: '0.78rem',
+              fontSize: '0.75rem',
               fontWeight: 700,
               cursor: 'pointer',
-              whiteSpace: 'nowrap',
+              textAlign: 'left',
               boxShadow: '1.5px 1.5px 0px var(--border-color)',
               color: 'var(--color-ink)',
-              flexShrink: 0,
             }}
             title="Klik untuk langsung ejek"
           >
@@ -85,18 +75,18 @@ export default function QuickChatBar({ senderName, onSendTaunt }: QuickChatBarPr
         ))}
       </div>
 
-      {/* Baris 2: Input Chat Bebas Langsung */}
+      {/* Form Input Chat Bebas */}
       <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '6px' }}>
         <input
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
           maxLength={60}
-          placeholder={`Chat langsung sebagai ${senderName}... (maks 60 huruf)`}
+          placeholder="Ketik pesan..."
           style={{
             flex: 1,
             padding: '6px 10px',
-            fontSize: '0.85rem',
+            fontSize: '0.82rem',
             fontWeight: 700,
             border: '2px solid var(--border-color)',
             borderRadius: '6px',
@@ -108,7 +98,7 @@ export default function QuickChatBar({ senderName, onSendTaunt }: QuickChatBarPr
           type="submit"
           disabled={!text.trim()}
           className="btn btn-primary btn-sm"
-          style={{ padding: '6px 14px', fontSize: '0.82rem', flexShrink: 0 }}
+          style={{ padding: '6px 12px', fontSize: '0.8rem', flexShrink: 0 }}
         >
           Kirim 🚀
         </button>
