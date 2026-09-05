@@ -359,6 +359,36 @@ export async function POST(
       return NextResponse.json({ success: true, state: room });
     }
 
+    // 5. ACTION: SEND_TAUNT
+    if (action === 'SEND_TAUNT') {
+      const { text } = body;
+      const sender = room.players.find((p: any) => p.id === playerId);
+      if (!sender) {
+        return NextResponse.json({ error: 'Pemain tidak ditemukan.' }, { status: 404 });
+      }
+      const cleanText = (typeof text === 'string' ? text.trim() : '').slice(0, 60);
+      if (!cleanText) {
+        return NextResponse.json({ error: 'Pesan tidak boleh kosong.' }, { status: 400 });
+      }
+      const taunt = {
+        playerId: sender.id,
+        senderName: sender.name,
+        text: cleanText,
+        timestamp: Date.now(),
+      };
+      room.lastTaunt = taunt;
+      room.logs.unshift({
+        id: `log-taunt-${Date.now()}`,
+        text: `💬 ${sender.name}: "${cleanText}"`,
+        type: 'info',
+        timestamp: new Date().toISOString(),
+      });
+      room.version += 1;
+      room.updatedAt = Date.now();
+      await saveRoom(room);
+      return NextResponse.json({ success: true, state: room, taunt });
+    }
+
     return NextResponse.json({ error: 'Aksi tidak dikenali.' }, { status: 400 });
   } catch (error) {
     console.error('Error handling room action:', error);

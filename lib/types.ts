@@ -80,6 +80,13 @@ export interface GameLogEntry {
 
 export type PlayMode = 'LOCAL' | 'ONLINE';
 
+export interface ActiveTaunt {
+  playerId: number;
+  senderName: string;
+  text: string;
+  timestamp: number;
+}
+
 export interface OnlineRoomState {
   code: string;
   hostId: string;
@@ -96,4 +103,6 @@ export interface OnlineRoomState {
   version: number;
   updatedAt: number;
   quizTiles: number[];
+  lastTaunt?: ActiveTaunt | null;
 }
+

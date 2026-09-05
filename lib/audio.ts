@@ -144,6 +144,67 @@ class SoundEngine {
       this.playTone(n.f, 'triangle', n.d, n.t, 0.25);
     });
   }
+
+  // Suara nada notifikasi giliran
+  public playTurnNotification(): void {
+    if (this.muted) return;
+    this.playTone(523.25, 'triangle', 0.12, 0, 0.22);
+    this.playTone(783.99, 'triangle', 0.24, 0.1, 0.25);
+  }
+
+  // Suara efek balon taunt / chat pop
+  public playTaunt(): void {
+    if (this.muted) return;
+    const ctx = this.getContext();
+    if (!ctx) return;
+    try {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(350, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.12);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.12);
+    } catch {}
+  }
+
+  // Suara vokal bahasa Indonesia memberitahu giliran pemain (Web Speech API)
+  public playTurnVoice(playerName?: string, isMe?: boolean): void {
+    if (this.muted) return;
+    this.playTurnNotification();
+
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      return;
+    }
+
+    try {
+      window.speechSynthesis.cancel();
+      const text = isMe
+        ? 'Giliran kamu!'
+        : (playerName ? `Giliran ${playerName}!` : 'Giliran pemain selanjutnya!');
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'id-ID';
+      utterance.rate = 1.15;
+      utterance.pitch = 1.05;
+
+      const voices = window.speechSynthesis.getVoices();
+      const idVoice = voices.find(
+        (v) => v.lang.includes('id') || v.lang.includes('ID') || v.name.toLowerCase().includes('indonesia')
+      );
+      if (idVoice) {
+        utterance.voice = idVoice;
+      }
+
+      window.speechSynthesis.speak(utterance);
+    } catch {
+      // Fallback aman
+    }
+  }
 }
 
 export const soundEngine = new SoundEngine();

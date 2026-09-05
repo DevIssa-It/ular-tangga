@@ -3,16 +3,17 @@
 import React from 'react';
 import Tile from './Tile';
 import SnakesLaddersSVG from './SnakesLaddersSVG';
-import { Player } from '@/lib/types';
+import { Player, ActiveTaunt } from '@/lib/types';
 import { getTileCenterPercent, getGridCoordinates } from '@/lib/board-config';
 
 interface BoardProps {
   players: Player[];
   activePlayerIndex: number;
   quizTiles?: number[];
+  activeTaunt?: ActiveTaunt | null;
 }
 
-export default function Board({ players, activePlayerIndex, quizTiles }: BoardProps) {
+export default function Board({ players, activePlayerIndex, quizTiles, activeTaunt }: BoardProps) {
   const quizTileSet = React.useMemo(() => {
     return quizTiles ? new Set(quizTiles) : undefined;
   }, [quizTiles]);
@@ -74,6 +75,7 @@ export default function Board({ players, activePlayerIndex, quizTiles }: BoardPr
         {players.map((player, idx) => {
           const pos = getPawnPosition(player, idx);
           const isActive = idx === activePlayerIndex;
+          const hasTaunt = activeTaunt && activeTaunt.playerId === player.id;
 
           return (
             <div
@@ -88,6 +90,11 @@ export default function Board({ players, activePlayerIndex, quizTiles }: BoardPr
             >
               {isActive && <div className="player-pawn-indicator" />}
               <span>{player.avatar}</span>
+              {hasTaunt && (
+                <div className="pawn-speech-bubble" key={activeTaunt.timestamp}>
+                  {activeTaunt.text}
+                </div>
+              )}
             </div>
           );
         })}

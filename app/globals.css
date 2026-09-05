@@ -1262,4 +1262,44 @@ input[type="radio"]:checked::before {
   box-shadow: 2px 2px 0px var(--border-color);
 }
 
+/* ==========================================================================
+   SPEECH BUBBLE BALON KATA BIDAK - STRICT ZERO GRADIENT & TACTILE
+   ========================================================================== */
 
+.pawn-speech-bubble {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #FFFFFF;
+  color: #18181B;
+  border: 2px solid #18181B;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  white-space: nowrap;
+  max-width: 150px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  box-shadow: 2px 2px 0px #18181B;
+  z-index: 50;
+  pointer-events: none;
+  animation: tauntPop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.pawn-speech-bubble::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 5px;
+  border-style: solid;
+  border-color: #18181B transparent transparent transparent;
+}
+
+@keyframes tauntPop {
+  0% { transform: translateX(-50%) scale(0.6); opacity: 0; }
+  100% { transform: translateX(-50%) scale(1); opacity: 1; }
+}

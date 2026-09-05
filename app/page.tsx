@@ -12,6 +12,7 @@ import WinnerModal from '@/components/Modals/WinnerModal';
 import ModeSelectModal from '@/components/Modals/ModeSelectModal';
 import OnlineLobbyModal from '@/components/Modals/OnlineLobbyModal';
 import GameHeader from '@/components/Game/GameHeader';
+import ChatDrawer from '@/components/Game/ChatDrawer';
 import {
   Player,
   GamePhase,
@@ -19,6 +20,7 @@ import {
   QuizQuestion,
   PlayMode,
   OnlineRoomState,
+  ActiveTaunt,
 } from '@/lib/types';
 import {
   LADDERS,
@@ -41,6 +43,14 @@ export default function GamePage() {
   const lastOnlineVersionRef = useRef<number>(0);
   const isAnsweringQuizRef = useRef<boolean>(false);
 
+  // Chat & Balon Ejekan State
+  const [activeTaunt, setActiveTaunt] = useState<ActiveTaunt | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
+  const tauntTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastAnnouncedTurnKeyRef = useRef<string>('');
+  const isOnlineAnimatingRef = useRef<boolean>(false);
+  const isRollingRef = useRef<boolean>(false);
+
   // Game Engine State
   const [phase, setPhase] = useState<GamePhase>('SETUP');
   const [players, setPlayers] = useState<Player[]>([]);
@@ -55,6 +65,19 @@ export default function GamePage() {
   const [consecutiveSixes, setConsecutiveSixes] = useState<number>(0);
   const [lastRolledSix, setLastRolledSix] = useState<boolean>(false);
   const [quizTiles, setQuizTiles] = useState<number[]>(DEFAULT_QUIZ_TILES);
+
+  const playersRef = useRef<Player[]>(players);
+  useEffect(() => {
+    playersRef.current = players;
+  }, [players]);
+
+  const triggerTaunt = useCallback((taunt: ActiveTaunt) => {
+    setActiveTaunt(taunt);
+    if (tauntTimerRef.current) clearTimeout(tauntTimerRef.current);
+    tauntTimerRef.current = setTimeout(() => {
+      setActiveTaunt(null);
+    }, 4000);
+  }, []);
 
   // 1. Inisialisasi: Cek parameter URL `?room=CODE` atau sesi tersimpan
   useEffect(() => {
@@ -130,8 +153,28 @@ export default function GamePage() {
         if (res.ok) {
           const data = await res.json();
           if (data.state && data.state.version !== lastOnlineVersionRef.current) {
+            if (isOnlineAnimatingRef.current) return;
             lastOnlineVersionRef.current = data.state.version;
             const s = data.state as OnlineRoomState;
+
+            if (s.lastTaunt && (!activeTaunt || s.lastTaunt.timestamp > (activeTaunt?.timestamp || 0))) {
+              triggerTaunt(s.lastTaunt);
+            }
+
+            // Animasi langkah lawan jika posisi berubah
+            const currentList = playersRef.current;
+            const movedPlayerIdx = s.players.findIndex(
+              (p, idx) => currentList[idx] && p.position !== currentList[idx].position
+            );
+
+            if (movedPlayerIdx !== -1 && !isOnlineAnimatingRef.current && !isRollingRef.current) {
+              isOnlineAnimatingRef.current = true;
+              const oldPos = currentList[movedPlayerIdx].position;
+              const finalPos = s.players[movedPlayerIdx].position;
+              await animateSequentialSteps(movedPlayerIdx, oldPos, s.diceValue, finalPos);
+              isOnlineAnimatingRef.current = false;
+            }
+
             setOnlineRoom(s);
             setPlayers(s.players);
             setActivePlayerIndex(s.activePlayerIndex);
@@ -148,9 +191,7 @@ export default function GamePage() {
 
             if (s.logs && s.logs.length > 0) {
               const latest = s.logs[0];
-              if (latest.type === 'ladder') soundEngine.playLadder();
-              else if (latest.type === 'snake') soundEngine.playSnake();
-              else if (latest.type === 'win') soundEngine.playVictory();
+              if (latest.type === 'win') soundEngine.playVictory();
               else if (latest.type === 'quiz') soundEngine.playQuizTick();
             }
           }
@@ -161,7 +202,7 @@ export default function GamePage() {
     }, 1200);
 
     return () => clearInterval(pollInterval);
-  }, [playMode, onlineRoom?.code, onlineRoom?.status]);
+  }, [playMode, onlineRoom?.code, onlineRoom?.status, triggerTaunt, activeTaunt]);
 
   // 3. Simpan statistik pertandingan ke database Neon DB saat permainan selesai
   const savedMatchRef = useRef<string | null>(null);
@@ -292,6 +333,10 @@ export default function GamePage() {
 
     setOnlineRoom(null);
     setMyPlayerId(null);
+    setPlayers([]);
+    setPhase('SETUP');
+    setWinner(null);
+    setLogs([]);
     setShowOnlineLobby(false);
     setPlayMode('SELECT');
     if (typeof window !== 'undefined') {
@@ -315,6 +360,96 @@ export default function GamePage() {
     setActivePlayerIndex((prev) => (prev + 1) % players.length);
     setPhase('WAIT_ROLL');
   }, [players.length]);
+
+  // Animasi langkah pion per petak (Online & Lokal)
+  const animateSequentialSteps = async (
+    playerIdx: number,
+    fromPos: number,
+    dice: number,
+    finalPos: number
+  ) => {
+    let cur = fromPos;
+    let forward = true;
+    for (let i = 0; i < dice; i++) {
+      if (cur >= 100) forward = false;
+      cur = forward ? cur + 1 : cur - 1;
+      soundEngine.playStep();
+      setPlayers((prev) => {
+        const updated = [...prev];
+        if (updated[playerIdx]) {
+          updated[playerIdx] = { ...updated[playerIdx], position: cur };
+        }
+        return updated;
+      });
+      await new Promise((r) => setTimeout(r, 220));
+    }
+
+    if (finalPos !== cur) {
+      await new Promise((r) => setTimeout(r, 350));
+      const isLadder = finalPos > cur;
+      if (isLadder) soundEngine.playLadder();
+      else soundEngine.playSnake();
+      setPlayers((prev) => {
+        const updated = [...prev];
+        if (updated[playerIdx]) {
+          updated[playerIdx] = { ...updated[playerIdx], position: finalPos };
+        }
+        return updated;
+      });
+      await new Promise((r) => setTimeout(r, 350));
+    }
+  };
+
+  // Notifikasi Suara Pergantian Giliran (Web Speech API Indonesia)
+  useEffect(() => {
+    if (phase !== 'WAIT_ROLL' || players.length === 0) return;
+    const currentP = players[activePlayerIndex];
+    if (!currentP) return;
+
+    const turnKey = `${playMode}-${currentP.id}-${currentP.turnsTaken}-${consecutiveSixes}`;
+    if (lastAnnouncedTurnKeyRef.current === turnKey) return;
+    lastAnnouncedTurnKeyRef.current = turnKey;
+
+    const isMe = playMode === 'ONLINE' && myPlayerId !== null && currentP.id === myPlayerId;
+    soundEngine.playTurnVoice(currentP.name, isMe);
+  }, [activePlayerIndex, phase, playMode, players, myPlayerId, consecutiveSixes]);
+
+  // Kirim Pesan / Balon Ejekan
+  const handleSendTaunt = async (text: string) => {
+    if (playMode === 'ONLINE') {
+      if (!onlineRoom || !myPlayerId) return;
+      try {
+        const res = await fetch(`/api/rooms/${onlineRoom.code}/action`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'SEND_TAUNT',
+            playerId: myPlayerId,
+            text,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.taunt) {
+            triggerTaunt(data.taunt);
+          }
+        }
+      } catch (err) {
+        console.warn('Gagal kirim pesan online:', err);
+      }
+    } else {
+      const currentPlayer = players[activePlayerIndex];
+      if (!currentPlayer) return;
+      const taunt: ActiveTaunt = {
+        playerId: currentPlayer.id,
+        senderName: currentPlayer.name,
+        text,
+        timestamp: Date.now(),
+      };
+      triggerTaunt(taunt);
+      addLog(`💬 ${currentPlayer.name}: "${text}"`, 'info');
+    }
+  };
 
   // Selesaikan giliran atau bonus 6 (Mode Lokal)
   const finishTurn = useCallback(
@@ -461,6 +596,7 @@ export default function GamePage() {
       if (!currentActive || currentActive.id !== myPlayerId) return;
 
       setIsRolling(true);
+      isRollingRef.current = true;
       soundEngine.playDiceRoll();
 
       const rollInterval = setInterval(() => {
@@ -477,12 +613,22 @@ export default function GamePage() {
         await new Promise((resolve) => setTimeout(resolve, 500));
         clearInterval(rollInterval);
         setIsRolling(false);
+        isRollingRef.current = false;
 
         if (res.ok) {
           const data = await res.json();
           if (data.success && data.state) {
             lastOnlineVersionRef.current = data.state.version;
             const s = data.state as OnlineRoomState;
+            isOnlineAnimatingRef.current = true;
+
+            const myIdx = s.players.findIndex((p) => p.id === myPlayerId);
+            if (myIdx !== -1 && players[myIdx]) {
+              const oldPos = players[myIdx].position;
+              const finalPos = s.players[myIdx].position;
+              await animateSequentialSteps(myIdx, oldPos, s.diceValue, finalPos);
+            }
+
             setOnlineRoom(s);
             setPlayers(s.players);
             setActivePlayerIndex(s.activePlayerIndex);
@@ -493,15 +639,16 @@ export default function GamePage() {
             setLogs(s.logs);
             setConsecutiveSixes(s.consecutiveSixes);
             setLastRolledSix(s.lastRolledSix);
+            isOnlineAnimatingRef.current = false;
 
             if (s.phase === 'GAME_OVER') soundEngine.playVictory();
             else if (s.phase === 'QUIZ_ACTIVE') soundEngine.playQuizTick();
-            else soundEngine.playStep();
           }
         }
       } catch {
         clearInterval(rollInterval);
         setIsRolling(false);
+        isRollingRef.current = false;
       }
       return;
     }
@@ -887,6 +1034,7 @@ export default function GamePage() {
             players={players}
             activePlayerIndex={activePlayerIndex}
             quizTiles={quizTiles}
+            activeTaunt={activeTaunt}
           />
         </section>
 
@@ -946,9 +1094,9 @@ export default function GamePage() {
       {/* Modal 1: Pemilihan Mode (Lokal vs Online) */}
       {playMode === 'SELECT' && (
         <ModeSelectModal
-          hasActiveGame={players.length > 0 && phase !== 'SETUP'}
+          hasActiveGame={players.length >= 2 && phase !== 'SETUP'}
           onClose={
-            players.length > 0 && phase !== 'SETUP'
+            players.length >= 2 && phase !== 'SETUP'
               ? () => setPlayMode('LOCAL')
               : undefined
           }
@@ -1008,6 +1156,45 @@ export default function GamePage() {
           }}
           onClose={() => setShowWinnerModal(false)}
         />
+      )}
+
+      {/* Modal Chat & Balon Ejekan */}
+      <ChatDrawer
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        onSendTaunt={handleSendTaunt}
+        senderName={
+          playMode === 'ONLINE'
+            ? (myPlayer?.name || 'Saya')
+            : (activePlayer?.name || 'Pemain Aktif')
+        }
+      />
+
+      {/* Tombol Floating Chat / Ejekan */}
+      {phase !== 'SETUP' && playMode !== 'SELECT' && (
+        <button
+          type="button"
+          onClick={() => setIsChatOpen(true)}
+          className="btn btn-sm"
+          style={{
+            position: 'fixed',
+            bottom: 24,
+            right: 24,
+            zIndex: 40,
+            backgroundColor: '#FEF08A',
+            border: '2px solid #18181B',
+            color: '#18181B',
+            fontWeight: 800,
+            boxShadow: '3px 3px 0px #18181B',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+          }}
+          title="Buka Chat & Kirim Ejekan"
+        >
+          <span style={{ fontSize: '1.1rem' }}>💬</span>
+          <span>Chat / Ejekan</span>
+        </button>
       )}
     </>
   );
