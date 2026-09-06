@@ -106,6 +106,7 @@ export function useLocalGame(isLocalActive: boolean) {
     const finalDice = Math.floor(Math.random() * 6) + 1;
     setDiceValue(finalDice);
     setIsRolling(false);
+    await new Promise((r) => setTimeout(r, 350));
     setPhase('MOVING');
 
     const cur = players[activePlayerIndex];

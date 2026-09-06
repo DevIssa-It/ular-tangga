@@ -38,28 +38,23 @@ export function useOnlineGame({
 
   const lastOnlineVersionRef = useRef<number>(0);
   const tauntTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastTauntTimestampRef = useRef<number>(0);
   const isOnlineAnimatingRef = useRef<boolean>(false);
   const playersRef = useRef<Player[]>(players);
   useEffect(() => { playersRef.current = players; }, [players]);
 
   const triggerTaunt = useCallback((taunt: ActiveTaunt) => {
+    lastTauntTimestampRef.current = Math.max(lastTauntTimestampRef.current, taunt.timestamp);
     setActiveTaunt(taunt);
     if (tauntTimerRef.current) clearTimeout(tauntTimerRef.current);
-    tauntTimerRef.current = setTimeout(() => setActiveTaunt(null), 4000);
+    tauntTimerRef.current = setTimeout(() => setActiveTaunt(null), 3500);
   }, []);
 
   const applyRoomState = (s: OnlineRoomState) => {
-    setOnlineRoom(s);
-    setPlayers(s.players);
-    setActivePlayerIndex(s.activePlayerIndex);
-    setDiceValue(s.diceValue);
-    setPhase(s.phase);
-    setCurrentQuiz(s.currentQuiz);
-    setWinner(s.winner);
-    setLogs(s.logs);
-    setConsecutiveSixes(s.consecutiveSixes);
-    setLastRolledSix(s.lastRolledSix);
-    if (s.quizTiles?.length) setQuizTiles(s.quizTiles);
+    setOnlineRoom(s); setPlayers(s.players); setActivePlayerIndex(s.activePlayerIndex);
+    setDiceValue(s.diceValue); setPhase(s.phase); setCurrentQuiz(s.currentQuiz);
+    setWinner(s.winner); setLogs(s.logs); setConsecutiveSixes(s.consecutiveSixes);
+    setLastRolledSix(s.lastRolledSix); if (s.quizTiles?.length) setQuizTiles(s.quizTiles);
   };
 
   // Polling sync online
@@ -74,13 +69,19 @@ export function useOnlineGame({
           if (isOnlineAnimatingRef.current) return;
           lastOnlineVersionRef.current = data.state.version;
           const s = data.state as OnlineRoomState;
-          if (s.lastTaunt && (!activeTaunt || s.lastTaunt.timestamp > (activeTaunt?.timestamp || 0))) {
+          if (s.lastTaunt && s.lastTaunt.timestamp > lastTauntTimestampRef.current) {
             triggerTaunt(s.lastTaunt);
           }
           const curList = playersRef.current;
           const movedIdx = s.players.findIndex((p, idx) => curList[idx] && p.position !== curList[idx].position);
           if (movedIdx !== -1 && !isOnlineAnimatingRef.current && !isRolling) {
             isOnlineAnimatingRef.current = true;
+            setIsRolling(true);
+            soundEngine.playDiceRoll();
+            await new Promise((r) => setTimeout(r, 500));
+            setDiceValue(s.diceValue);
+            setIsRolling(false);
+            await new Promise((r) => setTimeout(r, 350));
             await animateOnlineSteps(movedIdx, curList[movedIdx].position, s.diceValue, s.players[movedIdx].position, setPlayers);
             isOnlineAnimatingRef.current = false;
           }
@@ -91,7 +92,7 @@ export function useOnlineGame({
       } catch {}
     }, 1200);
     return () => clearInterval(interval);
-  }, [playMode, onlineRoom?.code, onlineRoom?.status, triggerTaunt, activeTaunt, isRolling]);
+  }, [playMode, onlineRoom?.code, onlineRoom?.status, triggerTaunt, isRolling]);
 
   const handleOnlineGameStarted = (room: OnlineRoomState, myId: number) => {
     applyRoomState(room);
@@ -113,14 +114,8 @@ export function useOnlineGame({
       await apiLeaveRoom(onlineRoom.code, myPlayerId, hostId);
       localStorage.removeItem(`ular_session_${onlineRoom.code}`);
     }
-    setOnlineRoom(null);
-    setMyPlayerId(null);
-    setPlayers([]);
-    setPhase('SETUP');
-    setWinner(null);
-    setLogs([]);
-    setShowOnlineLobby(false);
-    setPlayMode('SELECT');
+    setOnlineRoom(null); setMyPlayerId(null); setPlayers([]); setPhase('SETUP'); setWinner(null); setLogs([]);
+    setShowOnlineLobby(false); setPlayMode('SELECT');
     if (typeof window !== 'undefined') window.history.replaceState({}, '', '/');
   };
 
@@ -131,12 +126,14 @@ export function useOnlineGame({
     const rollInt = setInterval(() => setDiceValue(Math.floor(Math.random() * 6) + 1), 80);
     try {
       const d = await apiRollDice(onlineRoom.code, myPlayerId);
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 600));
       clearInterval(rollInt);
-      setIsRolling(false);
       if (d?.success && d.state) {
         lastOnlineVersionRef.current = d.state.version;
         const s = d.state as OnlineRoomState;
+        setDiceValue(s.diceValue);
+        setIsRolling(false);
+        await new Promise((r) => setTimeout(r, 350));
         isOnlineAnimatingRef.current = true;
         const myIdx = s.players.findIndex((p) => p.id === myPlayerId);
         if (myIdx !== -1 && playersRef.current[myIdx]) {
@@ -146,6 +143,8 @@ export function useOnlineGame({
         isOnlineAnimatingRef.current = false;
         if (s.phase === 'GAME_OVER') soundEngine.playVictory();
         else if (s.phase === 'QUIZ_ACTIVE') soundEngine.playQuizTick();
+      } else {
+        setIsRolling(false);
       }
     } catch {
       clearInterval(rollInt);
