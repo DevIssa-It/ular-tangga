@@ -85,7 +85,8 @@ export async function POST(
 
     // 5. ACTION: SEND_TAUNT
     if (action === 'SEND_TAUNT') {
-      const sender = room.players.find((p) => p.id === playerId);
+      const latestRoom = (await getRoom(code)) || room;
+      const sender = latestRoom.players.find((p) => p.id === playerId) || room.players.find((p) => p.id === playerId);
       if (!sender) {
         return NextResponse.json({ error: 'Pemain tidak ditemukan.' }, { status: 404 });
       }
@@ -99,17 +100,17 @@ export async function POST(
         text: cleanText,
         timestamp: Date.now(),
       };
-      room.lastTaunt = taunt;
-      room.logs.unshift({
+      latestRoom.lastTaunt = taunt;
+      latestRoom.logs.unshift({
         id: `log-taunt-${Date.now()}`,
         text: `💬 ${sender.name}: "${cleanText}"`,
         type: 'info',
         timestamp: new Date().toISOString(),
       });
-      room.version += 1;
-      room.updatedAt = Date.now();
-      await saveRoom(room);
-      return NextResponse.json({ success: true, state: room, taunt });
+      latestRoom.version += 1;
+      latestRoom.updatedAt = Date.now();
+      await saveRoom(latestRoom);
+      return NextResponse.json({ success: true, state: latestRoom, taunt });
     }
 
     return NextResponse.json({ error: 'Aksi tidak dikenali.' }, { status: 400 });

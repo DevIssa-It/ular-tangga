@@ -58,20 +58,22 @@ export async function initDbTable() {
 
 // Menyimpan atau memperbarui room
 export async function saveRoom(room: OnlineRoomState): Promise<void> {
+  const code = room.code.toUpperCase();
   const sql = getDatabase();
-  if (!sql) {
-    memoryRooms.set(room.code.toUpperCase(), room);
-    return;
-  }
+  const existing = memoryRooms.get(code);
+  if (existing && existing.version > room.version) return;
+  memoryRooms.set(code, room);
+  if (!sql) return;
 
   await initRoomsTable();
   const roomStateJson = JSON.stringify(room);
 
   await sql`
     INSERT INTO game_rooms (code, host_id, state, updated_at)
-    VALUES (${room.code.toUpperCase()}, ${room.hostId}, ${roomStateJson}::jsonb, NOW())
+    VALUES (${code}, ${room.hostId}, ${roomStateJson}::jsonb, NOW())
     ON CONFLICT (code) DO UPDATE
-    SET state = ${roomStateJson}::jsonb, updated_at = NOW();
+    SET state = ${roomStateJson}::jsonb, updated_at = NOW()
+    WHERE (game_rooms.state->>'version')::int <= ${room.version};
   `;
 }
 
@@ -79,21 +81,23 @@ export async function saveRoom(room: OnlineRoomState): Promise<void> {
 export async function getRoom(code: string): Promise<OnlineRoomState | null> {
   const normalizedCode = code.trim().toUpperCase();
   const sql = getDatabase();
-  if (!sql) {
-    return memoryRooms.get(normalizedCode) || null;
-  }
+  if (!sql) return memoryRooms.get(normalizedCode) || null;
 
-  await initRoomsTable();
-  const rows = await sql`
-    SELECT state FROM game_rooms WHERE code = ${normalizedCode} LIMIT 1;
-  `;
-
-  if (rows && rows.length > 0) {
-    const data = rows[0].state;
-    return typeof data === 'string' ? JSON.parse(data) : data;
-  }
-
-  return null;
+  try {
+    await initRoomsTable();
+    const rows = await sql`
+      SELECT state FROM game_rooms WHERE code = ${normalizedCode} LIMIT 1;
+    `;
+    if (rows && rows.length > 0) {
+      const data = rows[0].state;
+      const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+      const mem = memoryRooms.get(normalizedCode);
+      if (mem && mem.version > (parsed?.version ?? 0)) return mem;
+      if (parsed) memoryRooms.set(normalizedCode, parsed);
+      return parsed;
+    }
+  } catch {}
+  return memoryRooms.get(normalizedCode) || null;
 }
 
 // Menghapus room (opsional)
