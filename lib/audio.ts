@@ -172,37 +172,16 @@ class SoundEngine {
     } catch {}
   }
 
-  // Suara vokal bahasa Indonesia memberitahu giliran pemain (Web Speech API)
+  // Pemberitahuan giliran pemain (cukup nada lonceng halus, tanpa suara vokal robotik)
   public playTurnVoice(playerName?: string, isMe?: boolean): void {
     if (this.muted) return;
     this.playTurnNotification();
 
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      return;
-    }
-
-    try {
-      window.speechSynthesis.cancel();
-      const text = isMe
-        ? 'Giliran kamu!'
-        : (playerName ? `Giliran ${playerName}!` : 'Giliran pemain selanjutnya!');
-
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'id-ID';
-      utterance.rate = 1.15;
-      utterance.pitch = 1.05;
-
-      const voices = window.speechSynthesis.getVoices();
-      const idVoice = voices.find(
-        (v) => v.lang.includes('id') || v.lang.includes('ID') || v.name.toLowerCase().includes('indonesia')
-      );
-      if (idVoice) {
-        utterance.voice = idVoice;
-      }
-
-      window.speechSynthesis.speak(utterance);
-    } catch {
-      // Fallback aman
+    // Hentikan antrean speech synthesis jika ada yang berjalan
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch {}
     }
   }
 }

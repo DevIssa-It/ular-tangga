@@ -31,9 +31,9 @@ export default function GamePage() {
     playMode, setPlayMode,
     players: local.players, setPlayers: local.setPlayers,
     setActivePlayerIndex: local.setActivePlayerIndex, setDiceValue: local.setDiceValue,
-    setPhase: local.setPhase, setCurrentQuiz: () => {}, setWinner: () => {},
-    setLogs: () => {}, setConsecutiveSixes: () => {}, setLastRolledSix: () => {},
-    setQuizTiles: local.setQuizTiles, isRolling: local.isRolling, setIsRolling: () => {},
+    setPhase: local.setPhase, setCurrentQuiz: local.setCurrentQuiz, setWinner: local.setWinner,
+    setLogs: local.setLogs, setConsecutiveSixes: local.setConsecutiveSixes, setLastRolledSix: local.setLastRolledSix,
+    setQuizTiles: local.setQuizTiles, isRolling: local.isRolling, setIsRolling: local.setIsRolling,
   });
 
   // Deteksi room URL pada inisialisasi

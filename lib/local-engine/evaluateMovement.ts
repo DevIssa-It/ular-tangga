@@ -65,10 +65,10 @@ export async function evaluateLandedTile(
 export async function movePawnStepByStep(
   steps: number,
   playerIdx: number,
-  players: Player[],
+  startPos: number,
   setPlayers: React.Dispatch<React.SetStateAction<Player[]>>
 ): Promise<number> {
-  let cur = players[playerIdx].position;
+  let cur = startPos;
   let forward = true;
   for (let i = 0; i < steps; i++) {
     if (cur >= 100) forward = false;

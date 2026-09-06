@@ -10,7 +10,7 @@ interface UseOnlineGameProps {
   playMode: string;
   setPlayMode: (mode: 'LOCAL' | 'ONLINE' | 'SELECT') => void;
   players: Player[];
-  setPlayers: (players: Player[]) => void;
+  setPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
   setActivePlayerIndex: (idx: number) => void;
   setDiceValue: (val: number) => void;
   setPhase: (phase: any) => void;
@@ -81,7 +81,7 @@ export function useOnlineGame({
           const movedIdx = s.players.findIndex((p, idx) => curList[idx] && p.position !== curList[idx].position);
           if (movedIdx !== -1 && !isOnlineAnimatingRef.current && !isRolling) {
             isOnlineAnimatingRef.current = true;
-            await animateOnlineSteps(movedIdx, curList[movedIdx].position, s.diceValue, s.players[movedIdx].position, playersRef, setPlayers);
+            await animateOnlineSteps(movedIdx, curList[movedIdx].position, s.diceValue, s.players[movedIdx].position, setPlayers);
             isOnlineAnimatingRef.current = false;
           }
           applyRoomState(s);
@@ -140,7 +140,7 @@ export function useOnlineGame({
         isOnlineAnimatingRef.current = true;
         const myIdx = s.players.findIndex((p) => p.id === myPlayerId);
         if (myIdx !== -1 && playersRef.current[myIdx]) {
-          await animateOnlineSteps(myIdx, playersRef.current[myIdx].position, s.diceValue, s.players[myIdx].position, playersRef, setPlayers);
+          await animateOnlineSteps(myIdx, playersRef.current[myIdx].position, s.diceValue, s.players[myIdx].position, setPlayers);
         }
         applyRoomState(s);
         isOnlineAnimatingRef.current = false;

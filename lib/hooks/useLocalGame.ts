@@ -17,8 +17,7 @@ export function useLocalGame(isLocalActive: boolean) {
   const [winner, setWinner] = useState<Player | null>(null);
   const [logs, setLogs] = useState<GameLogEntry[]>([]);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
-  const [consecutiveSixes, setConsecutiveSixes] = useState<number>(0);
-  const [lastRolledSix, setLastRolledSix] = useState<boolean>(false);
+  const [consecutiveSixes, setConsecutiveSixes] = useState<number>(0); const [lastRolledSix, setLastRolledSix] = useState<boolean>(false);
   const [quizTiles, setQuizTiles] = useState<number[]>(DEFAULT_QUIZ_TILES);
   const isAnsweringRef = useRef<boolean>(false);
 
@@ -28,7 +27,7 @@ export function useLocalGame(isLocalActive: boolean) {
       const saved = localStorage.getItem('snakes_ladders_save_v1');
       if (saved) {
         const d = JSON.parse(saved);
-        if (d.players && d.players.length >= 2) {
+        if (d.players?.length >= 2) {
           setPlayers(d.players);
           setActivePlayerIndex(d.activePlayerIndex || 0);
           setDiceValue(d.diceValue || 1);
@@ -56,8 +55,7 @@ export function useLocalGame(isLocalActive: boolean) {
   }, [players.length]);
 
   const finishTurn = useCallback((wasSix: boolean) => {
-    if (wasSix) setPhase('WAIT_ROLL');
-    else nextTurn();
+    if (wasSix) setPhase('WAIT_ROLL'); else nextTurn();
   }, [nextTurn]);
 
   const handleTileEvent = async (tile: number, pIdx: number, wasSix: boolean) => {
@@ -108,8 +106,7 @@ export function useLocalGame(isLocalActive: boolean) {
     const isSix = finalDice === 6;
     const nextSixes = isSix ? consecutiveSixes + 1 : 0;
     if (isSix && nextSixes >= 3) {
-      setConsecutiveSixes(0);
-      setLastRolledSix(false);
+      setConsecutiveSixes(0); setLastRolledSix(false);
       addLog(`⚠️ ${cur.name} dapat 6 tiga kali berurutan! Lemparan batal.`, 'info');
       nextTurn();
       return;
@@ -124,7 +121,8 @@ export function useLocalGame(isLocalActive: boolean) {
       return u;
     });
 
-    const landed = await movePawnStepByStep(finalDice, activePlayerIndex, players, setPlayers);
+    const startPos = cur?.position || 1;
+    const landed = await movePawnStepByStep(finalDice, activePlayerIndex, startPos, setPlayers);
     if (landed === 100) {
       soundEngine.playVictory();
       setWinner(cur);
@@ -194,8 +192,9 @@ export function useLocalGame(isLocalActive: boolean) {
 
   return {
     phase, setPhase, players, setPlayers, activePlayerIndex, setActivePlayerIndex,
-    diceValue, setDiceValue, isRolling, currentQuiz, winner, logs, isLoaded,
-    consecutiveSixes, lastRolledSix, quizTiles, setQuizTiles,
+    diceValue, setDiceValue, isRolling, setIsRolling, currentQuiz, setCurrentQuiz,
+    winner, setWinner, logs, setLogs, isLoaded,
+    consecutiveSixes, setConsecutiveSixes, lastRolledSix, setLastRolledSix, quizTiles, setQuizTiles,
     addLog, startLocalGame, rollLocalDice, answerLocalQuiz, rematchLocal, resetLocal,
   };
 }
