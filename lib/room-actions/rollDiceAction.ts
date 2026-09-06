@@ -97,8 +97,21 @@ export async function handleRollDiceAction(room: OnlineRoomState, playerId: numb
       room.status = 'FINISHED';
       room.phase = 'GAME_OVER';
     } else {
-      if (!isSix) room.activePlayerIndex = (room.activePlayerIndex + 1) % room.players.length;
-      room.phase = 'WAIT_ROLL';
+      const isQuizAfterLadder = room.quizTiles ? room.quizTiles.includes(ladder.end) : QUIZ_TILES.has(ladder.end);
+      if (isQuizAfterLadder) {
+        const quiz = await getRandomQuizFromDb();
+        room.currentQuiz = quiz;
+        room.phase = 'QUIZ_ACTIVE';
+        room.logs.unshift({
+          id: `log-${Date.now()}-ladder-quiz`,
+          text: `❓ Tangga membawa ${activePlayer.name} ke petak Kuis ${ladder.end}! Kategori: ${quiz.category}`,
+          type: 'quiz',
+          timestamp: new Date().toISOString(),
+        });
+      } else {
+        if (!isSix) room.activePlayerIndex = (room.activePlayerIndex + 1) % room.players.length;
+        room.phase = 'WAIT_ROLL';
+      }
     }
 
     room.version += 1;
@@ -119,8 +132,21 @@ export async function handleRollDiceAction(room: OnlineRoomState, playerId: numb
       timestamp: new Date().toISOString(),
     });
 
-    if (!isSix) room.activePlayerIndex = (room.activePlayerIndex + 1) % room.players.length;
-    room.phase = 'WAIT_ROLL';
+    const isQuizAfterSnake = room.quizTiles ? room.quizTiles.includes(snake.end) : QUIZ_TILES.has(snake.end);
+    if (isQuizAfterSnake) {
+      const quiz = await getRandomQuizFromDb();
+      room.currentQuiz = quiz;
+      room.phase = 'QUIZ_ACTIVE';
+      room.logs.unshift({
+        id: `log-${Date.now()}-snake-quiz`,
+        text: `❓ Ular menjatuhkan ${activePlayer.name} ke petak Kuis ${snake.end}! Kategori: ${quiz.category}`,
+        type: 'quiz',
+        timestamp: new Date().toISOString(),
+      });
+    } else {
+      if (!isSix) room.activePlayerIndex = (room.activePlayerIndex + 1) % room.players.length;
+      room.phase = 'WAIT_ROLL';
+    }
     room.version += 1;
     room.updatedAt = Date.now();
     await saveRoom(room);

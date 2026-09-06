@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { OnlineRoomState } from '@/lib/types';
-import { saveRoom } from '@/lib/db';
-import { LADDERS, SNAKES } from '@/lib/board-config';
+import { saveRoom, getRandomQuizFromDb } from '@/lib/db';
+import { LADDERS, SNAKES, QUIZ_TILES } from '@/lib/board-config';
 import { recordOnlineMatch } from './recordMatch';
 
 export async function handleQuizAction(
@@ -53,6 +53,7 @@ export async function handleQuizAction(
     if (ladder) {
       activePlayer.position = ladder.end;
       activePlayer.laddersClimbed += 1;
+      targetPos = ladder.end;
       room.logs.unshift({
         id: `log-${Date.now()}-bonus-ladder`,
         text: `🪜 Hebat! Reaksi kuis membawa ${activePlayer.name} ke tangga ${ladder.start} -> naik ke ${ladder.end}!`,
@@ -69,6 +70,7 @@ export async function handleQuizAction(
       if (snake) {
         activePlayer.position = snake.end;
         activePlayer.snakesBitten += 1;
+        targetPos = snake.end;
         room.logs.unshift({
           id: `log-${Date.now()}-penalty-snake`,
           text: `🐍 Ups! Reaksi kuis menjatuhkan ${activePlayer.name} ke ular ${snake.start} -> meluncur ke ${snake.end}!`,
@@ -80,10 +82,23 @@ export async function handleQuizAction(
   }
 
   if (room.status !== 'FINISHED') {
-    if (!room.lastRolledSix) {
-      room.activePlayerIndex = (room.activePlayerIndex + 1) % room.players.length;
+    const isQuizTile = room.quizTiles ? room.quizTiles.includes(targetPos) : QUIZ_TILES.has(targetPos);
+    if (isQuizTile) {
+      const nextQuiz = await getRandomQuizFromDb();
+      room.currentQuiz = nextQuiz;
+      room.phase = 'QUIZ_ACTIVE';
+      room.logs.unshift({
+        id: `log-${Date.now()}-chain-quiz`,
+        text: `❓ Berantai! Gerakan kuis membawa ${activePlayer.name} ke petak Kuis ${targetPos}!`,
+        type: 'quiz',
+        timestamp: new Date().toISOString(),
+      });
+    } else {
+      if (!room.lastRolledSix) {
+        room.activePlayerIndex = (room.activePlayerIndex + 1) % room.players.length;
+      }
+      room.phase = 'WAIT_ROLL';
     }
-    room.phase = 'WAIT_ROLL';
   }
 
   room.version += 1;

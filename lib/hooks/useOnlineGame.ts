@@ -159,8 +159,14 @@ export function useOnlineGame({
       const d = await apiAnswerQuiz(onlineRoom.code, myPlayerId, isCorrect);
       if (d?.success && d.state) {
         lastOnlineVersionRef.current = d.state.version;
-        applyRoomState(d.state);
-        if (isCorrect) soundEngine.playLadder();
+        const s = d.state as OnlineRoomState;
+        const myIdx = s.players.findIndex((p) => p.id === myPlayerId);
+        if (myIdx !== -1 && playersRef.current[myIdx]) {
+          await animateOnlineSteps(myIdx, playersRef.current[myIdx].position, s.diceValue, s.players[myIdx].position, setPlayers);
+        }
+        applyRoomState(s);
+        if (s.phase === 'QUIZ_ACTIVE') soundEngine.playQuizTick();
+        else if (isCorrect) soundEngine.playLadder();
         else soundEngine.playSnake();
       }
     } catch {}

@@ -10,17 +10,16 @@ import { useLocalPersistence } from '@/lib/local-engine/localStorageSync';
 export function useLocalGame(isLocalActive: boolean) {
   const [phase, setPhase] = useState<GamePhase>('SETUP');
   const [players, setPlayers] = useState<Player[]>([]);
-  const [activePlayerIndex, setActivePlayerIndex] = useState<number>(0);
-  const [diceValue, setDiceValue] = useState<number>(1);
-  const [isRolling, setIsRolling] = useState<boolean>(false);
+  const [activePlayerIndex, setActivePlayerIndex] = useState(0);
+  const [diceValue, setDiceValue] = useState(1);
+  const [isRolling, setIsRolling] = useState(false);
   const [currentQuiz, setCurrentQuiz] = useState<QuizQuestion | null>(null);
   const [winner, setWinner] = useState<Player | null>(null);
   const [logs, setLogs] = useState<GameLogEntry[]>([]);
-  const [isLoaded, setIsLoaded] = useState<boolean>(false);
-  const [consecutiveSixes, setConsecutiveSixes] = useState(0);
-  const [lastRolledSix, setLastRolledSix] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [consecutiveSixes, setConsecutiveSixes] = useState(0); const [lastRolledSix, setLastRolledSix] = useState(false);
   const [quizTiles, setQuizTiles] = useState<number[]>(DEFAULT_QUIZ_TILES);
-  const isAnsweringRef = useRef<boolean>(false);
+  const isAnsweringRef = useRef(false);
 
   // Restore dari localStorage
   useEffect(() => {
@@ -79,6 +78,12 @@ export function useLocalGame(isLocalActive: boolean) {
         return u;
       });
       await new Promise((r) => setTimeout(r, 500));
+      if (quizTiles.includes(res.nextPos)) {
+        const nextRes = await evaluateLandedTile(res.nextPos, players[pIdx], quizTiles);
+        if (nextRes.quiz) setCurrentQuiz(nextRes.quiz);
+        setPhase('QUIZ_ACTIVE');
+        return;
+      }
     }
     if (res.isWin) {
       soundEngine.playVictory();
@@ -170,7 +175,6 @@ export function useLocalGame(isLocalActive: boolean) {
     setWinner(null); setLogs([]); setConsecutiveSixes(0); setLastRolledSix(false); setPhase('WAIT_ROLL');
     addLog(`Permainan Lokal dimulai (${cfg.length} pemain)! 🎉`, 'info');
   };
-
   const rematchLocal = () => {
     setPlayers((p) => p.map((x) => ({ ...x, position: 1, previousPosition: 1, turnsTaken: 0, quizzesAnswered: 0, quizzesCorrect: 0, laddersClimbed: 0, snakesBitten: 0 })));
     setActivePlayerIndex(0);
@@ -178,7 +182,6 @@ export function useLocalGame(isLocalActive: boolean) {
     setQuizTiles(generateRandomQuizTiles()); setPhase('WAIT_ROLL');
     addLog('Pertandingan ulang dimulai! Siapa pemenangnya? 🔥', 'info');
   };
-
   const resetLocal = () => {
     try { localStorage.removeItem('snakes_ladders_save_v1'); } catch {}
     setPhase('SETUP');
