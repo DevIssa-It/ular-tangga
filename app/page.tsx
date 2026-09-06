@@ -76,7 +76,7 @@ export default function GamePage() {
       <GameHeader
         playMode={playMode} onlineRoom={online.onlineRoom} myPlayer={myPlayer} copiedLink={online.copiedLink}
         onCopyRoomLink={online.handleCopyRoomLink} onLeaveOnlineRoom={online.handleLeaveOnlineRoom}
-        onSwitchToOnline={() => online.setShowOnlineLobby(true)} onResetLocal={local.resetLocal}
+        onSwitchToOnline={() => { setPlayMode('ONLINE'); online.setShowOnlineLobby(true); }} onResetLocal={local.resetLocal}
       />
 
       <main className="main-layout">
@@ -118,20 +118,37 @@ export default function GamePage() {
         <ModeSelectModal
           hasActiveGame={local.players.length >= 2 && local.phase !== 'SETUP'}
           onClose={local.players.length >= 2 && local.phase !== 'SETUP' ? () => setPlayMode('LOCAL') : undefined}
-          onSelectLocal={() => { setPlayMode('LOCAL'); if (local.players.length === 0) local.setPhase('SETUP'); }}
+          onSelectLocal={() => { setPlayMode('LOCAL'); if (local.players.length < 2 || local.phase === 'SETUP') local.setPhase('SETUP'); }}
           onSelectOnline={() => { setPlayMode('ONLINE'); online.setShowOnlineLobby(true); }}
         />
       )}
 
       {online.showOnlineLobby && (
         <OnlineLobbyModal
-          initialRoomCode={online.initialRoomCode} hasActiveGame={local.players.length >= 2 && local.phase !== 'SETUP'}
-          onGameStarted={online.handleOnlineGameStarted} onBackToModeSelect={() => online.setShowOnlineLobby(false)} onClose={() => online.setShowOnlineLobby(false)}
+          initialRoomCode={online.initialRoomCode}
+          hasActiveGame={local.players.length >= 2 && local.phase !== 'SETUP'}
+          onGameStarted={online.handleOnlineGameStarted}
+          onBackToModeSelect={() => {
+            online.setShowOnlineLobby(false);
+            setPlayMode('SELECT');
+          }}
+          onClose={() => {
+            online.setShowOnlineLobby(false);
+            if (local.players.length >= 2 && local.phase !== 'SETUP') {
+              setPlayMode('LOCAL');
+            } else {
+              setPlayMode('SELECT');
+            }
+          }}
         />
       )}
 
       {playMode === 'LOCAL' && local.phase === 'SETUP' && (
-        <SetupModal onStartGame={local.startLocalGame} onClose={local.players.length > 0 ? () => local.setPhase('WAIT_ROLL') : undefined} />
+        <SetupModal
+          onStartGame={local.startLocalGame}
+          onBackToModeSelect={() => setPlayMode('SELECT')}
+          onClose={local.players.length >= 2 ? () => local.setPhase('WAIT_ROLL') : undefined}
+        />
       )}
 
       {local.phase === 'QUIZ_ACTIVE' && local.currentQuiz && (

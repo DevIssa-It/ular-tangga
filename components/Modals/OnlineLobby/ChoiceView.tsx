@@ -5,14 +5,16 @@ import React from 'react';
 interface ChoiceViewProps {
   onCreateClick: () => void;
   onJoinClick: () => void;
-  onBack: () => void;
+  onBackToModeSelect: () => void;
+  onClose?: () => void;
   hasActiveGame?: boolean;
 }
 
 export default function ChoiceView({
   onCreateClick,
   onJoinClick,
-  onBack,
+  onBackToModeSelect,
+  onClose,
   hasActiveGame = false,
 }: ChoiceViewProps) {
   return (
@@ -45,21 +47,41 @@ export default function ChoiceView({
         </button>
       </div>
 
-      <button
-        type="button"
-        onClick={onBack}
-        className="btn btn-sm"
-        style={{
-          width: '100%',
-          justifyContent: 'center',
-          backgroundColor: hasActiveGame ? 'var(--color-surface-subtle)' : 'transparent',
-          borderColor: 'var(--border-color)',
-          fontWeight: 700,
-          fontSize: '0.88rem',
-        }}
-      >
-        {hasActiveGame ? '🎮 Kembali ke Permainan yang Sedang Berjalan' : '← Kembali ke Pilihan Mode'}
-      </button>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <button
+          type="button"
+          onClick={onBackToModeSelect}
+          className="btn btn-sm"
+          style={{
+            width: '100%',
+            justifyContent: 'center',
+            borderColor: 'var(--border-color)',
+            fontWeight: 700,
+            fontSize: '0.88rem',
+          }}
+        >
+          ← Kembali ke Pilihan Mode
+        </button>
+
+        {hasActiveGame && onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="btn btn-sm"
+            style={{
+              width: '100%',
+              justifyContent: 'center',
+              backgroundColor: 'var(--color-surface-subtle)',
+              borderColor: 'var(--border-color)',
+              fontWeight: 700,
+              fontSize: '0.88rem',
+            }}
+          >
+            🎮 Batal & Lanjut Permainan
+          </button>
+        )}
+      </div>
     </div>
   );
 }
+

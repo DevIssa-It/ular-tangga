@@ -7,12 +7,13 @@ import PlayerSetupCard from './Setup/PlayerSetupCard';
 
 interface SetupModalProps {
   onStartGame: (players: Player[]) => void;
+  onBackToModeSelect?: () => void;
   onClose?: () => void;
 }
 
 const AVAILABLE_AVATARS = ['🦁', '🦅', '🐸', '🦊', '🐙', '🐬', '🐼', '🐯', '🚀', '⭐'];
 
-export default function SetupModal({ onStartGame, onClose }: SetupModalProps) {
+export default function SetupModal({ onStartGame, onBackToModeSelect, onClose }: SetupModalProps) {
   const [playerCount, setPlayerCount] = useState<number>(2);
   const [playersData, setPlayersData] = useState(
     DEFAULT_PLAYER_PRESETS.map((preset) => ({
@@ -62,12 +63,12 @@ export default function SetupModal({ onStartGame, onClose }: SetupModalProps) {
   return (
     <div className="modal-backdrop is-open">
       <div className="modal-card-center" style={{ maxWidth: '540px', position: 'relative' }}>
-        {onClose && (
+        {(onClose || onBackToModeSelect) && (
           <button
             type="button"
-            onClick={onClose}
-            aria-label="Tutup dan kembali ke permainan"
-            title="Batal & Lanjut Bermain"
+            onClick={onClose || onBackToModeSelect}
+            aria-label="Tutup dan kembali"
+            title={onClose ? "Batal & Lanjut Bermain" : "Kembali ke Pilihan Mode"}
             style={{
               position: 'absolute',
               top: '16px',
@@ -170,6 +171,25 @@ export default function SetupModal({ onStartGame, onClose }: SetupModalProps) {
               <span>{onClose ? 'Mulai Ulang Baru 🚀' : 'Mulai Bermain Sekarang! 🚀'}</span>
             </button>
           </div>
+
+          {onBackToModeSelect && (
+            <div style={{ marginTop: '10px' }}>
+              <button
+                type="button"
+                onClick={onBackToModeSelect}
+                className="btn btn-sm"
+                style={{
+                  width: '100%',
+                  justifyContent: 'center',
+                  borderColor: 'var(--border-color)',
+                  fontWeight: 700,
+                  fontSize: '0.85rem',
+                }}
+              >
+                ← Kembali ke Pilihan Mode
+              </button>
+            </div>
+          )}
         </form>
       </div>
     </div>

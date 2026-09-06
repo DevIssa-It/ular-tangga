@@ -52,7 +52,7 @@ export default function OnlineLobbyModal({
         {(onClose || subView === 'CHOICE') && (
           <button
             type="button"
-            onClick={onClose || onBackToModeSelect}
+            onClick={hasActiveGame && onClose ? onClose : onBackToModeSelect}
             aria-label="Tutup dan kembali"
             title="Kembali"
             style={{
@@ -80,7 +80,8 @@ export default function OnlineLobbyModal({
             hasActiveGame={hasActiveGame}
             onCreateClick={() => setSubView('CREATE')}
             onJoinClick={() => setSubView('JOIN')}
-            onBack={onBackToModeSelect}
+            onBackToModeSelect={onBackToModeSelect}
+            onClose={onClose}
           />
         )}
 
