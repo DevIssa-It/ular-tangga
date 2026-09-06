@@ -68,23 +68,11 @@ export default function AdminPage() {
   };
 
   const handleSaveQuestion = async (q: Omit<QuizQuestion, 'id'>) => {
-    const newQuestion: QuizQuestion = {
-      ...q,
-      id: `custom-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      isCustom: true,
-    };
-
-    saveCustomQuestion(newQuestion); // Simpan fallback lokal
+    const newQuestion: QuizQuestion = { ...q, id: `custom-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`, isCustom: true };
+    saveCustomQuestion(newQuestion);
     try {
-      await fetch('/api/quiz', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newQuestion),
-      });
-    } catch (e) {
-      console.warn('Gagal sinkron ke Neon DB, tersimpan di lokal:', e);
-    }
-
+      await fetch('/api/quiz', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newQuestion) });
+    } catch {}
     await fetchQuestions();
     setSuccessMsg('🎉 Soal baru berhasil disimpan ke Bank Kuis!');
     setTimeout(() => setSuccessMsg(''), 3500);
@@ -92,26 +80,18 @@ export default function AdminPage() {
 
   const handleDeleteQuestion = async (id: string) => {
     if (!confirm('Yakin ingin menghapus soal ini?')) return;
-    deleteCustomQuestion(id); // Hapus lokal
+    deleteCustomQuestion(id);
     try {
       await fetch(`/api/quiz?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
-    } catch (e) {
-      console.warn('Gagal menghapus soal:', e);
-    }
+    } catch {}
     await fetchQuestions();
   };
 
   const handleImportQuestions = async (imported: QuizQuestion[]) => {
     imported.forEach((q) => saveCustomQuestion({ ...q, isCustom: true }));
     try {
-      await fetch('/api/quiz', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ questions: imported }),
-      });
-    } catch (e) {
-      console.warn('Gagal batch import:', e);
-    }
+      await fetch('/api/quiz', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ questions: imported }) });
+    } catch {}
     await fetchQuestions();
     setSuccessMsg(`✅ Berhasil mengimpor ${imported.length} soal baru!`);
     setTimeout(() => setSuccessMsg(''), 3500);
