@@ -70,13 +70,11 @@ export function useLocalGame(isLocalActive: boolean) {
     if (res.specialType === 'ladder' || res.specialType === 'snake') {
       setPhase('ON_SPECIAL');
       await new Promise((r) => setTimeout(r, 400));
-      setPlayers((prev) => {
-        const u = [...prev];
-        u[pIdx].position = res.nextPos;
-        if (res.specialType === 'ladder') u[pIdx].laddersClimbed += 1;
-        if (res.specialType === 'snake') u[pIdx].snakesBitten += 1;
-        return u;
-      });
+      setPlayers((prev) => prev.map((p, i) => i === pIdx ? {
+        ...p, position: res.nextPos,
+        laddersClimbed: p.laddersClimbed + (res.specialType === 'ladder' ? 1 : 0),
+        snakesBitten: p.snakesBitten + (res.specialType === 'snake' ? 1 : 0),
+      } : p));
       await new Promise((r) => setTimeout(r, 500));
       if (quizTiles.includes(res.nextPos)) {
         const nextRes = await evaluateLandedTile(res.nextPos, players[pIdx], quizTiles);
@@ -123,11 +121,7 @@ export function useLocalGame(isLocalActive: boolean) {
     setConsecutiveSixes(nextSixes);
     setLastRolledSix(isSix);
     if (isSix) addLog(`🎉 Angka 6! ${cur.name} lempar lagi!`, 'info');
-    setPlayers((prev) => {
-      const u = [...prev];
-      u[activePlayerIndex].turnsTaken += 1;
-      return u;
-    });
+    setPlayers((prev) => prev.map((p, i) => i === activePlayerIndex ? { ...p, turnsTaken: p.turnsTaken + 1 } : p));
 
     const startPos = cur?.position || 1;
     const landed = await movePawnStepByStep(finalDice, activePlayerIndex, startPos, setPlayers);
@@ -147,12 +141,9 @@ export function useLocalGame(isLocalActive: boolean) {
     try {
       const pIdx = activePlayerIndex;
       const player = players[pIdx];
-      setPlayers((prev) => {
-        const u = [...prev];
-        u[pIdx].quizzesAnswered += 1;
-        if (isCorrect) u[pIdx].quizzesCorrect += 1;
-        return u;
-      });
+      setPlayers((prev) => prev.map((p, i) => i === pIdx ? {
+        ...p, quizzesAnswered: p.quizzesAnswered + 1, quizzesCorrect: p.quizzesCorrect + (isCorrect ? 1 : 0),
+      } : p));
       setCurrentQuiz(null);
       setPhase('MOVING');
       addLog(isCorrect ? `✅ ${player.name} benar! Maju +2!` : `❌ ${player.name} salah! Mundur -1!`, 'quiz');

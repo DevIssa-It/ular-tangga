@@ -18,10 +18,12 @@ import { DEFAULT_PLAYER_PRESETS } from '@/lib/board-config';
 import { useLocalGame } from '@/lib/hooks/useLocalGame';
 import { useOnlineGame } from '@/lib/hooks/useOnlineGame';
 import { useTurnAnnouncer } from '@/lib/hooks/useTurnAnnouncer';
+import { apiTryAutoReconnect } from '@/lib/online-engine/onlineApi';
 
 export default function GamePage() {
   const [playMode, setPlayMode] = useState<PlayMode | 'SELECT'>('SELECT');
   const [showWinnerModal, setShowWinnerModal] = useState<boolean>(true);
+  const [isReconnecting, setIsReconnecting] = useState<boolean>(false);
 
   // Hook Engine Game Lokal
   const local = useLocalGame(playMode === 'LOCAL');
@@ -36,14 +38,23 @@ export default function GamePage() {
     setQuizTiles: local.setQuizTiles, isRolling: local.isRolling, setIsRolling: local.setIsRolling,
   });
 
-  // Deteksi room URL pada inisialisasi
+  // Deteksi room URL & Auto-reconnect jika ada sesi tersimpan
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const roomParam = new URLSearchParams(window.location.search).get('room');
     if (roomParam) {
-      online.setInitialRoomCode(roomParam.trim().toUpperCase());
+      const cleanCode = roomParam.trim().toUpperCase();
+      online.setInitialRoomCode(cleanCode);
       setPlayMode('ONLINE');
-      online.setShowOnlineLobby(true);
+      setIsReconnecting(true);
+      apiTryAutoReconnect(cleanCode).then((data) => {
+        setIsReconnecting(false);
+        if (data?.success && data.state?.status === 'PLAYING' && data.player) {
+          online.handleOnlineGameStarted(data.state, data.player.id);
+        } else {
+          online.setShowOnlineLobby(true);
+        }
+      });
     } else if (local.isLoaded && local.players.length >= 2) {
       setPlayMode('LOCAL');
     }
@@ -69,7 +80,15 @@ export default function GamePage() {
     }
   };
 
-  if (!local.isLoaded) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><p style={{ fontWeight: 800 }}>Memuat Ular Tangga Trivia...</p></div>;
+  if (!local.isLoaded || isReconnecting) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F4F4F6' }}>
+        <p style={{ fontWeight: 800, color: '#18181B' }}>
+          {isReconnecting ? 'Menyambungkan kembali ke Room...' : 'Memuat Ular Tangga Trivia...'}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <>

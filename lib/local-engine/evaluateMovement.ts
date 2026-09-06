@@ -97,7 +97,7 @@ export async function moveQuizSteps(
       soundEngine.playStep();
       setPlayers((prev) => {
         const u = [...prev];
-        u[playerIdx].position = Math.min(100, startPos + i);
+        if (u[playerIdx]) u[playerIdx] = { ...u[playerIdx], position: Math.min(100, startPos + i) };
         return u;
       });
       await new Promise((r) => setTimeout(r, 250));
@@ -108,7 +108,7 @@ export async function moveQuizSteps(
       soundEngine.playStep();
       setPlayers((prev) => {
         const u = [...prev];
-        u[playerIdx].position = targetPos;
+        if (u[playerIdx]) u[playerIdx] = { ...u[playerIdx], position: targetPos };
         return u;
       });
       await new Promise((r) => setTimeout(r, 300));

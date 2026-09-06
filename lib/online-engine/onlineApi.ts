@@ -34,3 +34,29 @@ export async function apiLeaveRoom(code: string, playerId: number, hostId?: stri
     });
   } catch {}
 }
+
+export async function apiTryAutoReconnect(code: string) {
+  let sessionData: { playerId?: number; hostId?: string; name?: string; avatar?: string } | null = null;
+  try {
+    const raw = localStorage.getItem(`ular_session_${code}`);
+    if (raw) sessionData = JSON.parse(raw);
+  } catch {}
+  if (!sessionData || (!sessionData.playerId && !sessionData.name)) return null;
+
+  try {
+    const res = await fetch(`/api/rooms/${code}/join`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: sessionData.name || 'Pemain',
+        avatar: sessionData.avatar || '🦁',
+        playerId: sessionData.playerId,
+        hostId: sessionData.hostId,
+      }),
+    });
+    return res.ok ? await res.json() : null;
+  } catch {
+    return null;
+  }
+}
+

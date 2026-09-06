@@ -115,7 +115,12 @@ export function useLobbyController({ initialRoomCode = '', onGameStarted }: UseL
       } catch {}
       setCurrentRoom(data.state);
       setMyPlayerId(data.player.id);
-      setSubView('LOBBY');
+      if (data.state.status === 'PLAYING') {
+        if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+        onGameStarted(data.state, data.player.id);
+      } else {
+        setSubView('LOBBY');
+      }
     } catch (err: unknown) {
       setErrorMsg((err as Error).message || 'Terjadi kesalahan.');
     } finally {
